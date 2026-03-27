@@ -1,0 +1,115 @@
+"use client";
+
+import { useEffect } from "react";
+import { X } from "lucide-react";
+import type { SkinType } from "@/types";
+import { SENSITIVITY_LEVELS } from "@/constants/survey";
+
+const SKIN_LABEL: Record<SkinType, string> = {
+  oily: "지성",
+  dry: "건성",
+  combination: "복합성",
+  sensitive: "민감성",
+  normal: "중성",
+};
+
+interface MyPageModalProps {
+  onClose: () => void;
+  nickname?: string;
+  userName?: string;
+  skinType?: SkinType;
+  skinSensitivity?: number;
+  concerns?: string[];
+  onEditSurvey: () => void;
+}
+
+export default function MyPageModal({
+  onClose,
+  nickname,
+  userName,
+  skinType,
+  skinSensitivity,
+  concerns = [],
+  onEditSurvey,
+}: MyPageModalProps) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const displayName = nickname?.trim() || userName?.trim() || "회원";
+  const skinLabel = skinType ? SKIN_LABEL[skinType] : "—";
+  const sens = SENSITIVITY_LEVELS.find((l) => l.level === skinSensitivity);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/30 backdrop-blur-[4px]">
+      <div
+        className="relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[24px] bg-white shadow-lg sm:rounded-[24px]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-[#efefef] px-5 py-4">
+          <h2 className="text-lg font-bold text-[#1a1a1a]">마이페이지</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 transition-colors hover:bg-[#f0f0ee]"
+            aria-label="닫기"
+          >
+            <X size={20} className="text-[#6b6b6b]" />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <section>
+            <p className="text-xs font-medium text-[#b0b0b0] mb-1">별명</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">{displayName}</p>
+          </section>
+          <section>
+            <p className="text-xs font-medium text-[#b0b0b0] mb-1">피부 타입</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">{skinLabel}</p>
+          </section>
+          <section>
+            <p className="text-xs font-medium text-[#b0b0b0] mb-1">민감도</p>
+            <p className="text-sm font-semibold text-[#1a1a1a]">
+              {skinSensitivity != null && sens
+                ? `Level ${sens.level} · ${sens.name}`
+                : "—"}
+            </p>
+          </section>
+          <section>
+            <p className="text-xs font-medium text-[#b0b0b0] mb-2">피부 고민</p>
+            {concerns.length === 0 ? (
+              <p className="text-sm text-[#888]">—</p>
+            ) : (
+              <ul className="flex flex-wrap gap-1.5">
+                {concerns.map((c) => (
+                  <li
+                    key={c}
+                    className="rounded-lg bg-[#f5f5f5] px-2.5 py-1 text-xs text-[#444]"
+                  >
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        <div className="shrink-0 border-t border-[#efefef] px-5 py-4">
+          <button
+            type="button"
+            onClick={() => {
+              onEditSurvey();
+            }}
+            className="w-full rounded-xl bg-[#f4cb4b] py-3 text-sm font-semibold text-[#1a1a1a] transition-opacity hover:opacity-95"
+          >
+            설문 수정하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

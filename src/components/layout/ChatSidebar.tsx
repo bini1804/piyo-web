@@ -18,6 +18,8 @@ const SKIN_LABEL: Record<SkinType, string> = {
 
 interface SidebarProps {
   isLoggedIn: boolean;
+  /** 표시용: 별명 우선, 없으면 userName */
+  nickname?: string;
   userName?: string;
   userAvatarUrl?: string;
   skinType?: SkinType;
@@ -31,6 +33,7 @@ interface SidebarProps {
 
 export default function ChatSidebar({
   isLoggedIn,
+  nickname,
   userName,
   userAvatarUrl,
   skinType,
@@ -41,6 +44,8 @@ export default function ChatSidebar({
   onSurveyClick,
   onProfileClick,
 }: SidebarProps) {
+  const memberLabel = nickname?.trim() || userName?.trim() || "회원";
+  const avatarLetter = (nickname?.trim() || userName || "U").slice(0, 1);
   const router = useRouter();
   const {
     sessions,
@@ -228,12 +233,12 @@ export default function ChatSidebar({
                   />
                 ) : (
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fdf6dc] text-xs font-semibold text-[#1a1a1a]">
-                    {(userName || "U").slice(0, 1)}
+                    {avatarLetter}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[#1a1a1a]">
-                    {userName || "회원"}
+                    {memberLabel}
                   </p>
                   {skinType && (
                     <span className="mt-1 inline-block rounded-md bg-[#fdf6dc] px-2 py-0.5 text-[11px] font-medium text-[#1a1a1a]">

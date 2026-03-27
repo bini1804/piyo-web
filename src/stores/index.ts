@@ -124,18 +124,40 @@ interface SurveyState {
   setField: <K extends keyof SurveyData>(key: K, value: SurveyData[K]) => void;
   setData: (d: Partial<SurveyData>) => void;
   setCompleted: (b: boolean) => void;
+  /** 설문 미완료 상태에서만 초기화. 완료 후에는 가드 (실수로 데이터 날리기 방지). */
   reset: () => void;
+  /**
+   * 설문 완료 여부와 무관하게 스토어를 비움.
+   * 마이페이지 등에서만 호출할 것 (일반 `reset()`은 완료 시 무시).
+   */
+  resetForSurveyEdit: () => void;
 }
 
-export const useSurveyStore = create<SurveyState>((set) => ({
-  data: {},
-  isCompleted: false,
-  setField: (key, value) =>
-    set((s) => ({ data: { ...s.data, [key]: value } })),
-  setData: (data) => set({ data }),
-  setCompleted: (isCompleted) => set({ isCompleted }),
-  reset: () => set({ data: {}, isCompleted: false }),
-}));
+export const useSurveyStore = create<SurveyState>()(
+  persist(
+    (set, get) => ({
+      data: {},
+      isCompleted: false,
+      setField: (key, value) =>
+        set((s) => ({ data: { ...s.data, [key]: value } })),
+      setData: (data) => set({ data }),
+      setCompleted: (isCompleted) => set({ isCompleted }),
+      reset: () => {
+        if (get().isCompleted) return;
+        set({ data: {}, isCompleted: false });
+      },
+      resetForSurveyEdit: () => set({ data: {}, isCompleted: false }),
+    }),
+    {
+      name: "piyo-survey-store",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        data: state.data,
+        isCompleted: state.isCompleted,
+      }),
+    }
+  )
+);
 
 // ---- Consent Store ----
 interface ConsentState {

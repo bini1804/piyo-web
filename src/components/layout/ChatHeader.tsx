@@ -8,11 +8,14 @@ import { PanelLeft } from "lucide-react";
 interface ChatHeaderProps {
   onSurveyClick: () => void;
   surveyCompleted: boolean;
+  /** false이면 우측 설문 진입 버튼 자체를 숨김 */
+  showSurveyButton: boolean;
 }
 
 export default function ChatHeader({
   onSurveyClick,
   surveyCompleted,
+  showSurveyButton,
 }: ChatHeaderProps) {
   const { isSidebarOpen, setSidebarOpen } = useChatStore();
   const router = useRouter();
@@ -50,25 +53,28 @@ export default function ChatHeader({
         </button>
       </div>
       <div className="min-w-0 flex-1" />
-      {/* 설문 버튼 — 최소 터치 영역 44px */}
-      <button
-        type="button"
-        onClick={onSurveyClick}
-        className={cn(
-          "flex min-h-[44px] min-w-[44px] shrink-0 items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-medium transition-colors",
-          surveyCompleted
-            ? "text-[#6b6b6b] hover:bg-[#f0f0ee]"
-            : "border border-[#f4cb4b] bg-[#fdf6dc] text-[#1a1a1a] hover:bg-[#fff9e6]"
-        )}
-      >
-        <span className="text-base leading-none" aria-hidden>
-          📋
-        </span>
-        <span className="hidden sm:inline">
-          {surveyCompleted ? "설문 수정" : "설문하기"}
-        </span>
-        <span className="sm:hidden">설문</span>
-      </button>
+      {showSurveyButton ? (
+        <button
+          type="button"
+          onClick={onSurveyClick}
+          className={cn(
+            "flex min-h-[44px] min-w-[44px] shrink-0 items-center gap-1.5 rounded-2xl px-3 py-1.5 text-sm font-medium transition-colors",
+            surveyCompleted
+              ? "text-[#6b6b6b] hover:bg-[#f0f0ee]"
+              : "border border-[#f4cb4b] bg-[#fdf6dc] text-[#1a1a1a] hover:bg-[#fff9e6]"
+          )}
+        >
+          <span className="text-base leading-none" aria-hidden>
+            📋
+          </span>
+          <span className="hidden sm:inline">
+            {surveyCompleted ? "설문 수정" : "설문하기"}
+          </span>
+          <span className="sm:hidden">설문</span>
+        </button>
+      ) : (
+        <div className="min-h-[44px] min-w-[44px] shrink-0" aria-hidden />
+      )}
     </header>
   );
 }

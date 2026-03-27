@@ -18,7 +18,6 @@ import TermsModal from "@/components/modals/TermsModal";
 
 interface SurveyModalProps {
   onComplete: () => void;
-  onSkip: () => void;
   onClose: () => void;
 }
 
@@ -156,11 +155,7 @@ function SensitivityExplainCard({ level }: { level: number }) {
   );
 }
 
-export default function SurveyModal({
-  onComplete,
-  onSkip,
-  onClose,
-}: SurveyModalProps) {
+export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
   const { data: session } = useSession();
   const { data, setField, setCompleted } = useSurveyStore();
   const [step, setStep] = useState(0);
@@ -175,7 +170,7 @@ export default function SurveyModal({
   const selectedSkin = SKIN_TYPES.find((t) => t.value === data.skin_type);
 
   const canProceed = (): boolean => {
-    if (step === 0) return true; // 별명은 선택 사항
+    if (step === 0) return Boolean((data.nickname ?? "").trim());
     if (step === 1)
       return skinDataConsent && !!data.gender && !!data.age && data.age > 0;
     if (step === 2) return Boolean(data.skin_type);
@@ -204,6 +199,11 @@ export default function SurveyModal({
     setIsSubmitting(true);
     try {
       const piyoId = session?.user?.piyo_user_id;
+      const provider = session?.user?.provider;
+      const nick = (data.nickname ?? "").trim();
+      if (piyoId && provider && nick) {
+        await upsertUserAction(piyoId, provider, nick);
+      }
       if (piyoId && data.skin_type) {
         await saveSurveyAction(piyoId, {
           skin_type: data.skin_type,
@@ -288,10 +288,10 @@ export default function SurveyModal({
                     피요가 뭐라고 불러드릴까요? 🌸
                   </h3>
                   <p
-                    className="text-sm mb-6"
+                    className="text-sm mb-2"
                     style={{ color: "var(--text-secondary)" }}
                   >
-                    별명을 입력하면 더 친근하게 대화할 수 있어요
+                    별명은 필수입니다 (최대 10자)
                   </p>
                 </div>
                 <input
@@ -632,14 +632,7 @@ export default function SurveyModal({
             {/* 버튼 행 */}
             <div className="flex items-center justify-between">
               {step === 0 ? (
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="text-sm transition-colors hover:opacity-80"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  건너뛰기
-                </button>
+                <span className="w-16 shrink-0" aria-hidden />
               ) : (
                 <button
                   type="button"

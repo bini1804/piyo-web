@@ -34,11 +34,7 @@ export default function SurveyPage() {
         <ArrowLeft className="h-5 w-5 text-[#1a1a1a]" />
       </button>
 
-      <SurveyModal
-        onComplete={handleComplete}
-        onSkip={handleComplete}
-        onClose={handleComplete}
-      />
+      <SurveyModal onComplete={handleComplete} onClose={handleComplete} />
     </div>
   );
 }

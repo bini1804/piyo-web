@@ -20,17 +20,53 @@ function getPiyoBase(): string {
   return url.replace(/\/$/, "");
 }
 
+export type PiyoUserProfile = {
+  piyo_user_id: string;
+  nickname: string | null;
+  provider: string | null;
+};
+
+/** RDS에 저장된 nickname·provider 조회 (재방문·새 브라우저) */
+export async function getUserProfile(
+  piyo_user_id: string
+): Promise<PiyoUserProfile> {
+  const base = getPiyoBase();
+  const res = await fetch(
+    `${base}/users/profile?user_id=${encodeURIComponent(piyo_user_id)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(`getUserProfile failed: ${res.status}`);
+  }
+  return res.json() as Promise<PiyoUserProfile>;
+}
+
+/** 이메일로 기존 piyo_user_id 조회 — 소셜 로그인 통합용 */
+export async function findUserByEmail(
+  email: string
+): Promise<string | null> {
+  const base = getPiyoBase();
+  const res = await fetch(
+    `${base}/users/find-by-email?email=${encodeURIComponent(email)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return null;
+  const data = (await res.json()) as { piyo_user_id: string | null };
+  return data.piyo_user_id ?? null;
+}
+
 /** 로그인 성공 시 유저 등록/갱신 */
 export async function upsertUser(
   piyo_user_id: string,
   provider: string,
-  nickname: string | null
+  nickname: string | null,
+  email?: string | null
 ): Promise<{ ok: boolean }> {
   const base = getPiyoBase();
   const res = await fetch(`${base}/users/upsert`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ piyo_user_id, provider, nickname }),
+    body: JSON.stringify({ piyo_user_id, provider, nickname, email: email ?? null }),
     cache: "no-store",
   });
   if (!res.ok) {

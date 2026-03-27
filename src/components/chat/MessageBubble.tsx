@@ -8,10 +8,22 @@ import type { ChatMessage } from "@/types";
 import ProductCard from "@/components/cards/ProductCard";
 import ProcedureCard from "@/components/cards/ProcedureCard";
 import { cn } from "@/lib/utils";
+import { stripSurveyInviteFromAnswer } from "@/lib/chat-strip-survey-nudge";
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  hideSurveyAnswerNudge = false,
+}: {
+  message: ChatMessage;
+  /** 로그인+설문완료 시 답변 속 설문 유도 문단 숨김 */
+  hideSurveyAnswerNudge?: boolean;
+}) {
   const isUser = message.role === "user";
   const meta = message.metadata;
+  const displayContent =
+    !isUser && hideSurveyAnswerNudge
+      ? stripSurveyInviteFromAnswer(message.content)
+      : message.content;
 
   return (
     <div
@@ -104,7 +116,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                   ),
                 }}
               >
-                {message.content}
+                {displayContent}
               </ReactMarkdown>
             </div>
           )}

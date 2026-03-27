@@ -16,6 +16,8 @@ interface WelcomeScreenProps {
   userName?: string;
   /** 설문에서 입력한 별명 */
   nickname?: string;
+  /** 로그인 + 설문 완료 시 하단 설문 CTA 숨김 */
+  showSurveyCta?: boolean;
 }
 
 export default function WelcomeScreen({
@@ -23,8 +25,9 @@ export default function WelcomeScreen({
   onSurveyClick,
   userName,
   nickname,
+  showSurveyCta = true,
 }: WelcomeScreenProps) {
-  // 우선순위: 별명 > 소셜 이름 > 비로그인
+  // 우선순위: 설문 별명 → 소셜 이름 → 비로그인 기본 문구
   const displayName = nickname?.trim() || userName?.trim() || null;
   const mainTitle = displayName
     ? `${displayName}님, 오늘 피부 컨디션은 어떠세요?`
@@ -98,22 +101,24 @@ export default function WelcomeScreen({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onSurveyClick}
-        className="mx-auto mt-6 flex w-full max-w-[480px] items-center gap-3 rounded-2xl bg-[#fdf6dc] px-4 py-3 text-left text-sm font-medium text-[#1a1a1a] transition-opacity hover:opacity-90"
-      >
-        <Image
-          src="/images/piyo-wave.png"
-          alt=""
-          width={56}
-          height={56}
-          className="h-14 w-14 max-h-14 max-w-14 shrink-0 object-contain"
-        />
-        <span className="min-w-0 flex-1 leading-snug">
-          30초 피부 진단으로 나만의 맞춤형 피요 완성하기 →
-        </span>
-      </button>
+      {showSurveyCta ? (
+        <button
+          type="button"
+          onClick={onSurveyClick}
+          className="mx-auto mt-6 flex w-full max-w-[480px] items-center gap-3 rounded-2xl bg-[#fdf6dc] px-4 py-3 text-left text-sm font-medium text-[#1a1a1a] transition-opacity hover:opacity-90"
+        >
+          <Image
+            src="/images/piyo-wave.png"
+            alt=""
+            width={56}
+            height={56}
+            className="h-14 w-14 max-h-14 max-w-14 shrink-0 object-contain"
+          />
+          <span className="min-w-0 flex-1 leading-snug">
+            30초 피부 진단으로 나만의 맞춤형 피요 완성하기 →
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 }

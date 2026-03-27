@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useChatStore, useSurveyStore } from "@/stores";
 import { usePiyoChat } from "@/hooks/usePiyoChat";
 import ChatSidebar from "@/components/layout/ChatSidebar";
@@ -12,17 +13,26 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import WelcomeScreen from "@/components/chat/WelcomeScreen";
 import SurveyInviteInline from "@/components/chat/SurveyInviteInline";
 import SurveyModal from "@/components/onboarding/SurveyModal";
+import MyPageModal from "@/components/modals/MyPageModal";
 import LoginPromptModal, {
   isLoginModalDismissed,
 } from "@/components/modals/LoginPromptModal";
+import {
+  getUserProfileAction,
+  fetchSurveyCompletedFromServerAction,
+} from "@/lib/actions/piyo";
 
 export default function HomePage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { messages, isLoading } = useChatStore();
   const { isCompleted: surveyDone, data: surveyData } = useSurveyStore();
+  const setField = useSurveyStore((s) => s.setField);
+  const setCompleted = useSurveyStore((s) => s.setCompleted);
   const { sendMessage, startNewSession } = usePiyoChat();
 
   const [showSurvey, setShowSurvey] = useState(false);
+  const [showMypage, setShowMypage] = useState(false);
   const [surveyInviteDismissed, setSurveyInviteDismissed] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -30,7 +40,35 @@ export default function HomePage() {
   const isLoggedIn = !!session?.user;
   const userMessageCount = messages.filter((m) => m.role === "user").length;
 
-  // 채팅 3회 달성 시 비로그인 유저에게 로그인 권유 모달 표시
+  const hideSurveyChrome = isLoggedIn && surveyDone;
+
+  useEffect(() => {
+    const id = session?.user?.piyo_user_id;
+    if (!id) return;
+    let cancelled = false;
+    void fetchSurveyCompletedFromServerAction(id).then((done) => {
+      if (cancelled || !done) return;
+      setCompleted(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.piyo_user_id, setCompleted]);
+
+  useEffect(() => {
+    const id = session?.user?.piyo_user_id;
+    if (!id) return;
+    if (surveyData.nickname?.trim()) return;
+    let cancelled = false;
+    void getUserProfileAction(id).then((p) => {
+      if (cancelled || !p.nickname?.trim()) return;
+      setField("nickname", p.nickname.trim());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.piyo_user_id, surveyData.nickname, setField]);
+
   useEffect(() => {
     if (userMessageCount >= 3 && !isLoggedIn && !isLoginModalDismissed()) {
       setShowLoginModal(true);
@@ -48,7 +86,6 @@ export default function HomePage() {
   }, [messages, isLoading, showSurveyInvite]);
 
   const openSurvey = () => {
-    // 비로그인 + 미완료 상태에서 설문 시작 시 로그인 권유 모달 먼저 표시
     if (!isLoggedIn && !isLoginModalDismissed()) {
       setShowLoginModal(true);
       return;
@@ -57,22 +94,31 @@ export default function HomePage() {
     setSurveyInviteDismissed(false);
   };
 
+  const stripSurveyNudgeInBubble = isLoggedIn && surveyDone;
+
   return (
     <div className="flex h-dvh w-full max-w-[100vw] overflow-hidden bg-white">
       <ChatSidebar
         isLoggedIn={isLoggedIn}
+        nickname={surveyData.nickname?.trim() || undefined}
+        userName={session?.user?.name ?? undefined}
+        userAvatarUrl={session?.user?.image ?? undefined}
+        skinType={surveyData.skin_type}
+        concerns={surveyData.concerns}
         onNewChat={() => {
           startNewSession();
         }}
         onSelectSession={() => {}}
-        onLoginClick={() => {}}
+        onLoginClick={() => router.push("/login")}
         onSurveyClick={openSurvey}
+        onProfileClick={() => setShowMypage(true)}
       />
 
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-white">
         <ChatHeader
           onSurveyClick={openSurvey}
           surveyCompleted={surveyDone}
+          showSurveyButton={!hideSurveyChrome}
         />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -82,11 +128,16 @@ export default function HomePage() {
               onSurveyClick={openSurvey}
               userName={session?.user?.name ?? undefined}
               nickname={surveyData.nickname?.trim() || undefined}
+              showSurveyCta={!hideSurveyChrome}
             />
           ) : (
             <div className="mx-auto w-full max-w-3xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6">
               {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} />
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  hideSurveyAnswerNudge={stripSurveyNudgeInBubble}
+                />
               ))}
               {isLoading && <TypingIndicator />}
               {showSurveyInvite && (
@@ -114,8 +165,22 @@ export default function HomePage() {
       {showSurvey && (
         <SurveyModal
           onComplete={() => setShowSurvey(false)}
-          onSkip={() => setShowSurvey(false)}
           onClose={() => setShowSurvey(false)}
+        />
+      )}
+
+      {showMypage && (
+        <MyPageModal
+          onClose={() => setShowMypage(false)}
+          nickname={surveyData.nickname}
+          userName={session?.user?.name ?? undefined}
+          skinType={surveyData.skin_type}
+          skinSensitivity={surveyData.skin_sensitivity}
+          concerns={surveyData.concerns}
+          onEditSurvey={() => {
+            setShowMypage(false);
+            setShowSurvey(true);
+          }}
         />
       )}
 

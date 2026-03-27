@@ -3,7 +3,7 @@ import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 import Kakao from "next-auth/providers/kakao";
 import Naver from "next-auth/providers/naver";
-import { upsertUser } from "@/lib/api/user";
+import { upsertUser, findUserByEmail } from "@/lib/api/user";
 
 function buildPiyoUserId(provider: string, providerAccountId: string): string {
   return `${provider}_${providerAccountId}`;
@@ -108,21 +108,34 @@ export const authConfig: NextAuthConfig = {
         const provider = account.provider;
         const providerAccountId = account.providerAccountId;
 
-        token.piyo_user_id = buildPiyoUserId(provider, providerAccountId);
-        token.provider = provider;
-        token.provider_id = providerAccountId;
-
         const fromProfileEmail = profileEmailFromOAuth(profile);
-        token.email =
-          (token.email as string | undefined) ?? fromProfileEmail ?? null;
+        const email = (token.email as string | undefined) ?? fromProfileEmail ?? null;
+        token.email = email;
 
         const fromProfileName = profileNameFromOAuth(profile);
         token.name =
           (token.name as string | undefined) ?? fromProfileName ?? null;
 
+        // 이메일 기반 계정 통합: 같은 이메일로 다른 소셜 로그인 시 기존 ID 재사용
+        let piyoUserId = buildPiyoUserId(provider, providerAccountId);
+        if (email) {
+          try {
+            const existingId = await findUserByEmail(email);
+            if (existingId) {
+              piyoUserId = existingId;
+            }
+          } catch (e) {
+            console.error("[auth] findUserByEmail failed:", e);
+          }
+        }
+
+        token.piyo_user_id = piyoUserId;
+        token.provider = provider;
+        token.provider_id = providerAccountId;
+
         // Piyo 백엔드에 유저 등록/갱신 (nickname은 설문 시 별도 업데이트)
         try {
-          await upsertUser(token.piyo_user_id as string, provider, null);
+          await upsertUser(piyoUserId, provider, null, email);
         } catch (e) {
           console.error("[auth] upsertUser failed:", e);
         }
