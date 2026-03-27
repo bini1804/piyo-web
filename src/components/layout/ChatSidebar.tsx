@@ -70,6 +70,7 @@ export default function ChatSidebar({
   }, [setSidebarOpen]);
 
   const handleSelect = (id: string) => {
+    setOpenMenuId(null);
     loadSession(id);
     onSelectSession(id);
     if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -85,12 +86,22 @@ export default function ChatSidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [isSidebarOpen, setSidebarOpen]);
 
-  // 드롭다운 외부 클릭 시 닫기
+  // 외부 클릭 시 메뉴 닫기 — mousedown 쓰면 메뉴 버튼 click 전에 닫혀 삭제/이름변경이 무시되는 경우가 있어 click 사용
   useEffect(() => {
     if (!openMenuId) return;
-    const handler = () => setOpenMenuId(null);
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const handler = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      if (
+        el.closest("[data-session-menu-panel]") ||
+        el.closest("[data-session-menu-trigger]")
+      ) {
+        return;
+      }
+      setOpenMenuId(null);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
   }, [openMenuId]);
 
   // 편집 input 자동 포커스 + 전체 선택
@@ -221,53 +232,46 @@ export default function ChatSidebar({
                             />
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleSelect(s.id)}
+                          <div
                             className={cn(
-                              "w-full rounded-lg px-3 py-2 text-left text-sm text-[#1a1a1a] transition-colors",
+                              "flex w-full items-stretch gap-0.5 rounded-lg text-left text-sm text-[#1a1a1a] transition-colors",
                               currentSessionId === s.id
                                 ? "bg-[#fdf6dc]"
                                 : "bg-transparent hover:bg-[#f0f0ee]"
                             )}
                           >
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="block min-w-0 truncate">
-                                · {s.title}
-                              </span>
-                              {/* ··· 버튼: PC hover / 모바일 항상 */}
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                aria-label="메뉴"
-                                onClick={(e) => toggleMenu(e, s.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ")
-                                    toggleMenu(e as unknown as React.MouseEvent, s.id);
-                                }}
-                                className={cn(
-                                  "shrink-0 rounded p-1 text-[#b0b0b0] transition-colors hover:bg-gray-100 hover:text-gray-500",
-                                  "md:opacity-0 md:group-hover:opacity-100"
-                                )}
-                              >
-                                ···
-                              </span>
-                            </div>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSelect(s.id)}
+                              className="min-w-0 flex-1 px-3 py-2 text-left"
+                            >
+                              <span className="block truncate">· {s.title}</span>
+                            </button>
+                            <button
+                              type="button"
+                              data-session-menu-trigger
+                              aria-label="대화 메뉴"
+                              onClick={(e) => toggleMenu(e, s.id)}
+                              className={cn(
+                                "shrink-0 rounded px-2 py-2 text-[#b0b0b0] transition-colors hover:bg-gray-100 hover:text-gray-500",
+                                "md:opacity-0 md:group-hover:opacity-100"
+                              )}
+                            >
+                              ···
+                            </button>
+                          </div>
                         )}
 
                         {/* 드롭다운 메뉴 */}
                         {openMenuId === s.id && (
                           <div
-                            onMouseDown={(e) => e.stopPropagation()}
+                            data-session-menu-panel
                             className="absolute right-0 top-full z-50 mt-0.5 min-w-[120px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
                           >
                             <button
                               type="button"
-                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                e.preventDefault();
                                 startEdit(s.id, s.title);
                               }}
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
@@ -276,7 +280,6 @@ export default function ChatSidebar({
                             </button>
                             <button
                               type="button"
-                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => handleDelete(e, s.id)}
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50"
                             >
