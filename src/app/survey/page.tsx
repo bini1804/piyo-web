@@ -7,7 +7,7 @@ import SurveyModal from "@/components/onboarding/SurveyModal";
 /**
  * /survey 페이지
  * 미들웨어에서 설문 미완료 유저를 이 페이지로 리디렉션합니다.
- * 설문 완료 후 홈(/)으로 이동하며 piyo-survey-done 쿠키가 설정됩니다.
+ * 설문 저장 성공 시 서버 액션(saveSurveyAction)에서 piyo-survey-done 쿠키를 설정합니다.
  */
 export default function SurveyPage() {
   const router = useRouter();
