@@ -1,0 +1,27 @@
+@keyframes piyoFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-piyo-float {
+  animation: piyoFloat 3s ease-in-out infinite;
+}
+
+@keyframes piyoBlink {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.97);
+  }
+}
+
+.animate-piyo-blink {
+  animation: piyoBlink 4s ease-in-out infinite;
+}

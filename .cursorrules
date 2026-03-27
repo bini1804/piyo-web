@@ -1,0 +1,38 @@
+---
+# Piyo Web — Cursor Engineering Rules
+
+## 절대 원칙
+- TypeScript any 사용 금지. 모든 타입 명시적으로 정의.
+- UI 컴포넌트에서 fetch/axios 직접 호출 금지.
+  반드시 hooks/ → app/api/ route 경유.
+- NEXT_PUBLIC_ 없는 env 변수는 절대 클라이언트 컴포넌트에서 import 금지.
+- 새 기능은 새 파일로. 기존 파일 수정 최소화.
+
+## API / 보안
+- 모든 API Route: Rate Limiting + 입력값 검증 필수.
+- 피요 백엔드 에러(4xx/5xx) 시 유저 친화적 메시지로 fallback.
+- Supabase service_role key는 서버사이드 API Route에서만 사용.
+- 유저 입력은 서버사이드에서 trim + 길이 제한 검증.
+
+## 상태 관리
+- Zustand store는 stores/index.ts 한 곳에서만 관리.
+- 컴포넌트 내 useState는 UI 상태(모달 열림/닫힘 등)만.
+  서버 데이터는 반드시 store 또는 TanStack Query 사용.
+- 스트리밍 응답 전환 가능하도록 usePiyoChat hook 인터페이스 유지.
+
+## 에러 처리
+- 모든 async 함수 try/catch 필수.
+- API Route에서 console.error(context, error) 로깅 필수.
+- 세션/DB 저장 실패가 챗 UX를 블로킹하면 안 됨 (fire-and-forget).
+
+## 코드 품질
+- 중요 로직에 JSDoc 주석 필수.
+- 컴포넌트 props는 interface로 명시적 정의.
+- 새 기능 추가 후 스스로 edge case 3가지 점검하고 보완.
+
+## 배포 전 체크리스트
+- npx tsc --noEmit 에러 0개
+- npm run build 로컬 통과
+- .env.example과 실제 env 변수 동기화 확인
+- MOCK_MODE=false 상태에서 실제 API 응답 확인
+---
