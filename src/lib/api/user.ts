@@ -98,6 +98,31 @@ export async function saveSurvey(
   return res.json() as Promise<{ ok: boolean }>;
 }
 
+/** 설문 피부 데이터 조회 — 로그인 시 surveyStore 동기화용 */
+export async function getSurveyData(piyo_user_id: string): Promise<{
+  skin_type: string | null;
+  skin_intensity: number | null;
+  skin_sensitivity: number | null;
+  concerns: string[];
+} | null> {
+  const base = getPiyoBase();
+  try {
+    const res = await fetch(
+      `${base}/surveys/data?user_id=${encodeURIComponent(piyo_user_id)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    return res.json() as Promise<{
+      skin_type: string | null;
+      skin_intensity: number | null;
+      skin_sensitivity: number | null;
+      concerns: string[];
+    }>;
+  } catch {
+    return null;
+  }
+}
+
 /** 설문 완료 여부 확인 — middleware에서 호출 */
 export async function checkSurvey(piyo_user_id: string): Promise<boolean> {
   const base = getPiyoBase();

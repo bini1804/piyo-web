@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { signOut } from "next-auth/react";
 import { X } from "lucide-react";
 import type { SkinType } from "@/types";
 import { SENSITIVITY_LEVELS } from "@/constants/survey";
+import { useSurveyStore } from "@/stores";
 
 const SKIN_LABEL: Record<SkinType, string> = {
   oily: "지성",
@@ -32,6 +34,8 @@ export default function MyPageModal({
   concerns = [],
   onEditSurvey,
 }: MyPageModalProps) {
+  const forceReset = useSurveyStore((s) => s.forceReset);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -39,6 +43,16 @@ export default function MyPageModal({
       document.body.style.overflow = prev;
     };
   }, []);
+
+  const handleLogout = async () => {
+    onClose();
+    await new Promise((r) => setTimeout(r, 150));
+    forceReset();
+    localStorage.removeItem("piyo-survey-store");
+    localStorage.removeItem("login_modal_dismissed_at");
+    document.cookie = "piyo-survey-done=; max-age=0; path=/";
+    await signOut({ callbackUrl: "/" });
+  };
 
   const displayName = nickname?.trim() || userName?.trim() || "회원";
   const skinLabel = skinType ? SKIN_LABEL[skinType] : "—";
@@ -98,7 +112,7 @@ export default function MyPageModal({
           </section>
         </div>
 
-        <div className="shrink-0 border-t border-[#efefef] px-5 py-4">
+        <div className="shrink-0 border-t border-[#efefef] px-5 py-4 space-y-2">
           <button
             type="button"
             onClick={() => {
@@ -107,6 +121,13 @@ export default function MyPageModal({
             className="w-full rounded-xl bg-[#f4cb4b] py-3 text-sm font-semibold text-[#1a1a1a] transition-opacity hover:opacity-95"
           >
             설문 수정하기
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="w-full rounded-xl border border-red-200 py-3 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
+          >
+            로그아웃
           </button>
         </div>
       </div>

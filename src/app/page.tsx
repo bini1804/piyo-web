@@ -20,7 +20,9 @@ import LoginPromptModal, {
 import {
   getUserProfileAction,
   fetchSurveyCompletedFromServerAction,
+  getSurveyDataAction,
 } from "@/lib/actions/piyo";
+import type { SkinType } from "@/types";
 
 export default function HomePage() {
   const router = useRouter();
@@ -58,16 +60,36 @@ export default function HomePage() {
   useEffect(() => {
     const id = session?.user?.piyo_user_id;
     if (!id) return;
-    if (surveyData.nickname?.trim()) return;
     let cancelled = false;
-    void getUserProfileAction(id).then((p) => {
-      if (cancelled || !p.nickname?.trim()) return;
-      setField("nickname", p.nickname.trim());
+    void Promise.all([
+      getUserProfileAction(id),
+      getSurveyDataAction(id),
+    ]).then(([profile, surveyResult]) => {
+      if (cancelled) return;
+      if (profile.nickname?.trim()) {
+        setField("nickname", profile.nickname.trim());
+      }
+      if (surveyResult) {
+        if (surveyResult.skin_type) {
+          setField("skin_type", surveyResult.skin_type as SkinType);
+        }
+        if (surveyResult.skin_intensity != null) {
+          setField("skin_intensity", surveyResult.skin_intensity);
+        }
+        if (surveyResult.skin_sensitivity != null) {
+          setField("skin_sensitivity", surveyResult.skin_sensitivity);
+        }
+        if (surveyResult.concerns.length > 0) {
+          setField("concerns", surveyResult.concerns);
+        }
+        setCompleted(true);
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.piyo_user_id, surveyData.nickname, setField]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.piyo_user_id]);
 
   useEffect(() => {
     if (userMessageCount >= 3 && !isLoggedIn && !isLoginModalDismissed()) {

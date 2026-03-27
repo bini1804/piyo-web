@@ -6,7 +6,7 @@
  */
 
 import { cookies } from "next/headers";
-import { upsertUser, saveSurvey, getUserProfile, checkSurvey } from "@/lib/api/user";
+import { upsertUser, saveSurvey, getUserProfile, checkSurvey, getSurveyData } from "@/lib/api/user";
 
 const SURVEY_DONE_COOKIE = "piyo-survey-done";
 
@@ -53,6 +53,19 @@ export async function fetchSurveyCompletedFromServerAction(
     return await checkSurvey(piyo_user_id);
   } catch {
     return false;
+  }
+}
+
+export async function getSurveyDataAction(piyo_user_id: string): Promise<{
+  skin_type: string | null;
+  skin_intensity: number | null;
+  skin_sensitivity: number | null;
+  concerns: string[];
+} | null> {
+  try {
+    return await getSurveyData(piyo_user_id);
+  } catch {
+    return null;
   }
 }
 

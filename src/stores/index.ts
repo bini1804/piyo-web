@@ -23,6 +23,8 @@ interface ChatState {
   startNewSession: () => void;
   saveCurrentSession: () => void;
   loadSession: (sessionId: string) => void;
+  updateSessionTitle: (sessionId: string, newTitle: string) => void;
+  deleteSession: (sessionId: string) => void;
 }
 
 function buildSessionFromState(
@@ -82,6 +84,39 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
+      updateSessionTitle: (sessionId: string, newTitle: string) => {
+        const s = get();
+        const updated = s.sessions.map((x) =>
+          x.id === sessionId
+            ? { ...x, title: newTitle, updatedAt: new Date().toISOString() }
+            : x
+        );
+        set({ sessions: updated });
+      },
+
+      deleteSession: (sessionId: string) => {
+        const s = get();
+        const newSessions = s.sessions.filter((x) => x.id !== sessionId);
+        if (s.currentSessionId === sessionId) {
+          if (newSessions.length > 0) {
+            const next = newSessions[0];
+            set({
+              sessions: newSessions,
+              currentSessionId: next.id,
+              messages: next.messages.map((m) => ({ ...m })),
+            });
+          } else {
+            set({
+              sessions: newSessions,
+              currentSessionId: newSessionId(),
+              messages: [],
+            });
+          }
+        } else {
+          set({ sessions: newSessions });
+        }
+      },
+
       startNewSession: () => {
         const s = get();
         if (s.messages.length > 0) {
@@ -131,6 +166,8 @@ interface SurveyState {
    * 마이페이지 등에서만 호출할 것 (일반 `reset()`은 완료 시 무시).
    */
   resetForSurveyEdit: () => void;
+  /** 로그아웃 등 강제 초기화용. resetForSurveyEdit 와 동일. */
+  forceReset: () => void;
 }
 
 export const useSurveyStore = create<SurveyState>()(
@@ -147,6 +184,7 @@ export const useSurveyStore = create<SurveyState>()(
         set({ data: {}, isCompleted: false });
       },
       resetForSurveyEdit: () => set({ data: {}, isCompleted: false }),
+      forceReset: () => set({ data: {}, isCompleted: false }),
     }),
     {
       name: "piyo-survey-store",

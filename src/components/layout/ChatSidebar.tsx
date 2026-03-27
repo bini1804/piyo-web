@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores";
@@ -54,7 +54,15 @@ export default function ChatSidebar({
     toggleSidebar,
     setSidebarOpen,
     loadSession,
+    updateSessionTitle,
+    deleteSession,
   } = useChatStore();
+
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -79,7 +87,61 @@ export default function ChatSidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [isSidebarOpen, setSidebarOpen]);
 
-  const groups = groupSessionsByDay(sessions);
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = () => setOpenMenuId(null);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openMenuId]);
+
+  // 편집 input 자동 포커스 + 전체 선택
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  const toggleMenu = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setOpenMenuId((prev) => (prev === id ? null : id));
+  };
+
+  const startEdit = (id: string, currentTitle: string) => {
+    setOpenMenuId(null);
+    setEditingId(id);
+    setEditTitle(currentTitle);
+  };
+
+  const saveEdit = (id: string) => {
+    if (editTitle.trim()) {
+      updateSessionTitle(id, editTitle.trim());
+    }
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setOpenMenuId(null);
+    deleteSession(id);
+    showToast("대화가 삭제됐어요");
+  };
+
+  // 중복 제거 후 그룹핑
+  const uniqueSessions = sessions.filter(
+    (s, i, arr) => arr.findIndex((x) => x.id === s.id) === i
+  );
+  const groups = groupSessionsByDay(uniqueSessions);
 
   return (
     <>
@@ -143,7 +205,7 @@ export default function ChatSidebar({
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-          {sessions.length === 0 ? (
+          {uniqueSessions.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm leading-relaxed text-[#6b6b6b]">
               아직 대화 기록이
               <br />
@@ -158,19 +220,83 @@ export default function ChatSidebar({
                   </p>
                   <ul className="space-y-0.5">
                     {g.sessions.map((s) => (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelect(s.id)}
-                          className={cn(
-                            "w-full rounded-lg px-3 py-2 text-left text-sm text-[#1a1a1a] transition-colors",
-                            currentSessionId === s.id
-                              ? "bg-[#fdf6dc]"
-                              : "bg-transparent hover:bg-[#f0f0ee]"
-                          )}
-                        >
-                          <span className="block truncate">· {s.title}</span>
-                        </button>
+                      <li key={s.id} className="relative group">
+                        {editingId === s.id ? (
+                          // 이름 변경 모드
+                          <div className="flex items-center gap-1 rounded-lg bg-[#fdf6dc] px-3 py-2">
+                            <input
+                              ref={editInputRef}
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveEdit(s.id);
+                                if (e.key === "Escape") cancelEdit();
+                              }}
+                              onBlur={() => saveEdit(s.id)}
+                              className="min-w-0 flex-1 bg-transparent text-sm text-[#1a1a1a] outline-none"
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(s.id)}
+                            className={cn(
+                              "w-full rounded-lg px-3 py-2 text-left text-sm text-[#1a1a1a] transition-colors",
+                              currentSessionId === s.id
+                                ? "bg-[#fdf6dc]"
+                                : "bg-transparent hover:bg-[#f0f0ee]"
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="block min-w-0 truncate">
+                                · {s.title}
+                              </span>
+                              {/* ··· 버튼: PC hover / 모바일 항상 */}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                aria-label="메뉴"
+                                onClick={(e) => toggleMenu(e, s.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ")
+                                    toggleMenu(e as unknown as React.MouseEvent, s.id);
+                                }}
+                                className={cn(
+                                  "shrink-0 rounded p-1 text-[#b0b0b0] transition-colors hover:bg-gray-100 hover:text-gray-500",
+                                  "md:opacity-0 md:group-hover:opacity-100"
+                                )}
+                              >
+                                ···
+                              </span>
+                            </div>
+                          </button>
+                        )}
+
+                        {/* 드롭다운 메뉴 */}
+                        {openMenuId === s.id && (
+                          <div
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-full z-50 mt-0.5 min-w-[120px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEdit(s.id, s.title);
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              ✏️ 이름 변경
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDelete(e, s.id)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50"
+                            >
+                              🗑️ 삭제
+                            </button>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -263,6 +389,13 @@ export default function ChatSidebar({
           )}
         </div>
       </aside>
+
+      {/* 토스트 알림 */}
+      {toast && (
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[9999] -translate-x-1/2 rounded-full bg-gray-800 px-4 py-2 text-sm text-white">
+          {toast}
+        </div>
+      )}
     </>
   );
 }
