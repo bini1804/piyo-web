@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useChatStore, useSurveyStore } from "@/stores";
 import { getAnonymousId } from "@/lib/utils";
@@ -16,6 +16,35 @@ export function usePiyoChat() {
 
   const userId: string =
     session?.user?.piyo_user_id ?? getAnonymousId();
+
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+  }>({ latitude: null, longitude: null });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!navigator.geolocation) return;
+
+    // 브라우저 캐시 활용 (5분 이내 위치 재사용)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      () => {
+        // 거부/실패 → null 유지, 서버가 기본값 처리
+        setUserLocation({ latitude: null, longitude: null });
+      },
+      {
+        timeout: 8000,
+        maximumAge: 5 * 60 * 1000, // 5분 캐시
+        enableHighAccuracy: false,  // 배터리 절약
+      }
+    );
+  }, []);
 
   const addMessage = useChatStore((s) => s.addMessage);
   const setLoading = useChatStore((s) => s.setLoading);
@@ -69,6 +98,8 @@ export function usePiyoChat() {
           skin_sensitivity: survey.skin_sensitivity,
           skin_intensity: survey.skin_intensity,
           is_pregnant: survey.is_pregnant,
+          latitude: userLocation.latitude ?? undefined,
+          longitude: userLocation.longitude ?? undefined,
         };
 
         const res = await fetch("/api/chat", {
@@ -122,6 +153,7 @@ export function usePiyoChat() {
       saveCurrentSession,
       userId,
       session,
+      userLocation,
     ]
   );
 
