@@ -25,3 +25,31 @@
 .animate-piyo-blink {
   animation: piyoBlink 4s ease-in-out infinite;
 }
+
+/* ── 스크롤바 커스텀 (웹킷) ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #F4CB4B;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e6b800;
+}
+
+/* ── focus outline 브랜드 컬러 통일 ── */
+:focus-visible {
+  outline: 2px solid #F4CB4B;
+  outline-offset: 2px;
+}
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid #F4CB4B;
+  outline-offset: 2px;
+}

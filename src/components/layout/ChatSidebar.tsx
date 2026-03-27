@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores";
 import { cn, groupSessionsByDay } from "@/lib/utils";
 import type { SkinType } from "@/types";
@@ -40,6 +41,7 @@ export default function ChatSidebar({
   onSurveyClick,
   onProfileClick,
 }: SidebarProps) {
+  const router = useRouter();
   const {
     sessions,
     currentSessionId,
@@ -76,6 +78,7 @@ export default function ChatSidebar({
 
   return (
     <>
+      {/* 모바일 오버레이 — 외부 클릭 시 사이드바 닫기 */}
       {isSidebarOpen && (
         <button
           type="button"
@@ -95,8 +98,14 @@ export default function ChatSidebar({
             "md:pointer-events-none md:w-0 md:min-w-0 md:overflow-hidden md:border-0 md:opacity-0"
         )}
       >
+        {/* 사이드바 헤더 — 피요 로고 클릭 시 홈으로 */}
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#efefef] px-3">
-          <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex min-w-0 items-center gap-2 rounded-lg transition-colors hover:bg-[#f0f0ee] px-1 py-0.5"
+            aria-label="홈으로"
+          >
             <Image
               src="/images/piyo-default.png"
               alt="피요"
@@ -107,7 +116,7 @@ export default function ChatSidebar({
             <span className="truncate text-sm font-semibold text-[#1a1a1a]">
               피요
             </span>
-          </div>
+          </button>
           <button
             type="button"
             onClick={toggleSidebar}

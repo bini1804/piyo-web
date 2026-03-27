@@ -12,18 +12,23 @@ const suggestions: { emoji: string; text: string }[] = [
 interface WelcomeScreenProps {
   onSuggestionClick: (t: string) => void;
   onSurveyClick: () => void;
+  /** 세션에서 가져온 이름 (소셜 프로필) */
   userName?: string;
+  /** 설문에서 입력한 별명 */
+  nickname?: string;
 }
 
 export default function WelcomeScreen({
   onSuggestionClick,
   onSurveyClick,
   userName,
+  nickname,
 }: WelcomeScreenProps) {
-  const mainTitle =
-    userName && userName.trim().length > 0
-      ? `${userName.trim()}님, 오늘 피부 컨디션은 어떠세요?`
-      : "안녕하세요! 피요예요 🌸";
+  // 우선순위: 별명 > 소셜 이름 > 비로그인
+  const displayName = nickname?.trim() || userName?.trim() || null;
+  const mainTitle = displayName
+    ? `${displayName}님, 오늘 피부 컨디션은 어떠세요?`
+    : "안녕하세요! 피요예요 🌸";
 
   return (
     <div
@@ -41,7 +46,7 @@ export default function WelcomeScreen({
               alt="피요"
               width={120}
               height={120}
-              className="animate-piyo-float"
+              className="animate-piyo-float h-24 w-24 sm:h-[120px] sm:w-[120px]"
               priority
             />
           </div>

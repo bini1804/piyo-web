@@ -102,6 +102,7 @@ export default function ProductDetail({ data, backPath = "/" }: ProductDetailPro
           "max-w-2xl mx-auto w-full px-4 pt-4",
           data.link?.trim() ? "pb-28" : "pb-8"
         )}
+        style={data.link?.trim() ? { paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" } : undefined}
       >
         <button
           type="button"
@@ -206,7 +207,10 @@ export default function ProductDetail({ data, backPath = "/" }: ProductDetailPro
         ) : null}
 
         {data.link?.trim() ? (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#FFFFFF] border-t border-[#F0F0F0] max-w-2xl mx-auto w-full">
+          <div
+            className="fixed bottom-0 left-0 right-0 bg-[#FFFFFF] border-t border-[#F0F0F0] max-w-2xl mx-auto w-full px-4 pt-4"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+          >
             <a
               href={data.link}
               target="_blank"

@@ -34,7 +34,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       <div
         className={cn(
           "flex flex-col gap-3 min-w-0",
-          isUser ? "items-end max-w-[70%]" : "items-start max-w-[75%]"
+          isUser ? "items-end max-w-[85%] sm:max-w-[70%]" : "items-start max-w-[88%] sm:max-w-[75%]"
         )}
       >
         <div

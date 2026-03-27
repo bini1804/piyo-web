@@ -16,7 +16,7 @@ import SurveyModal from "@/components/onboarding/SurveyModal";
 export default function HomePage() {
   const { data: session } = useSession();
   const { messages, isLoading } = useChatStore();
-  const { isCompleted: surveyDone } = useSurveyStore();
+  const { isCompleted: surveyDone, data: surveyData } = useSurveyStore();
   const { sendMessage, startNewSession } = usePiyoChat();
 
   const [showSurvey, setShowSurvey] = useState(false);
@@ -63,6 +63,7 @@ export default function HomePage() {
               onSuggestionClick={sendMessage}
               onSurveyClick={openSurvey}
               userName={session?.user?.name ?? undefined}
+              nickname={surveyData.nickname?.trim() || undefined}
             />
           ) : (
             <div className="mx-auto w-full max-w-3xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6">

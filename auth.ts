@@ -3,6 +3,7 @@ import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 import Kakao from "next-auth/providers/kakao";
 import Naver from "next-auth/providers/naver";
+import { upsertUser } from "@/lib/api/user";
 
 function buildPiyoUserId(provider: string, providerAccountId: string): string {
   return `${provider}_${providerAccountId}`;
@@ -99,6 +100,13 @@ export const authConfig: NextAuthConfig = {
         const fromProfileName = profileNameFromOAuth(profile);
         token.name =
           (token.name as string | undefined) ?? fromProfileName ?? null;
+
+        // Piyo 백엔드에 유저 등록/갱신 (nickname은 설문 시 별도 업데이트)
+        try {
+          await upsertUser(token.piyo_user_id as string, provider, null);
+        } catch (e) {
+          console.error("[auth] upsertUser failed:", e);
+        }
       }
       return token;
     },

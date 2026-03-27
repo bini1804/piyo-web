@@ -18,6 +18,7 @@ export type Gender = "male" | "female";
 export type SkinType = "oily" | "dry" | "combination" | "sensitive" | "normal";
 
 export interface SurveyData {
+  nickname?: string;         // 별명 (선택, step 0)
   age: number;
   gender: Gender;
   skin_type: SkinType;
