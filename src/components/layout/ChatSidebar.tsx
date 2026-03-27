@@ -132,6 +132,7 @@ export default function ChatSidebar({
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    e.preventDefault();
     setOpenMenuId(null);
     deleteSession(id);
     showToast("대화가 삭제됐어요");
@@ -233,7 +234,8 @@ export default function ChatSidebar({
                                 if (e.key === "Escape") cancelEdit();
                               }}
                               onBlur={() => saveEdit(s.id)}
-                              className="min-w-0 flex-1 bg-transparent text-sm text-[#1a1a1a] outline-none"
+                              onClick={(e) => e.stopPropagation()}
+                              className="min-w-0 flex-1 bg-transparent text-sm text-[#1a1a1a] outline-none border-b border-[#f4cb4b]"
                             />
                           </div>
                         ) : (
@@ -280,20 +282,23 @@ export default function ChatSidebar({
                           >
                             <button
                               type="button"
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                e.preventDefault();
                                 startEdit(s.id, s.title);
                               }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50"
                             >
-                              ✏️ 이름 변경
+                              이름 변경
                             </button>
                             <button
                               type="button"
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => handleDelete(e, s.id)}
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50"
                             >
-                              🗑️ 삭제
+                              삭제
                             </button>
                           </div>
                         )}

@@ -174,6 +174,12 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
   const [skinType, setSkinType] = useState<SkinType | "">(
     () => useSurveyStore.getState().data.skin_type ?? ""
   );
+  const [skinIntensity, setSkinIntensity] = useState<number>(
+    () => useSurveyStore.getState().data.skin_intensity ?? 0
+  );
+  const [skinSensitivity, setSkinSensitivity] = useState<number>(
+    () => useSurveyStore.getState().data.skin_sensitivity ?? 0
+  );
   const [skinDataConsent, setSkinDataConsent] = useState(() => {
     const d = useSurveyStore.getState().data;
     return Boolean(d.skin_type && d.gender);
@@ -193,6 +199,8 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
       const a = d.age;
       setAge(a != null && a > 0 ? a : "");
       setSkinType(d.skin_type ?? "");
+      setSkinIntensity(d.skin_intensity ?? 0);
+      setSkinSensitivity(d.skin_sensitivity ?? 0);
       setSelectedConcerns([...(d.concerns ?? [])]);
       setSkinDataConsent(Boolean(d.skin_type && d.gender));
     };
@@ -274,6 +282,8 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
 
   const selectSkinType = (value: (typeof SKIN_TYPES)[number]["value"]) => {
     if (skinType !== value) {
+      setSkinIntensity(0);
+      setSkinSensitivity(0);
       setField("skin_intensity", undefined);
       setField("skin_sensitivity", undefined);
     }
@@ -540,8 +550,11 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                           title={selectedSkin.q1.text}
                           leftLabel={selectedSkin.q1.left}
                           rightLabel={selectedSkin.q1.right}
-                          value={data.skin_intensity}
-                          onChange={(n) => setField("skin_intensity", n)}
+                          value={skinIntensity > 0 ? skinIntensity : undefined}
+                          onChange={(n) => {
+                            setSkinIntensity(n);
+                            setField("skin_intensity", n);
+                          }}
                         />
                         <div>
                           <FlowerLikert
@@ -549,13 +562,14 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                             subtitle={SENSITIVITY_QUESTION.sub}
                             leftLabel={SENSITIVITY_QUESTION.left}
                             rightLabel={SENSITIVITY_QUESTION.right}
-                            value={data.skin_sensitivity}
-                            onChange={(n) => setField("skin_sensitivity", n)}
+                            value={skinSensitivity > 0 ? skinSensitivity : undefined}
+                            onChange={(n) => {
+                              setSkinSensitivity(n);
+                              setField("skin_sensitivity", n);
+                            }}
                           />
-                          {data.skin_sensitivity !== undefined ? (
-                            <SensitivityExplainCard
-                              level={data.skin_sensitivity}
-                            />
+                          {skinSensitivity > 0 ? (
+                            <SensitivityExplainCard level={skinSensitivity} />
                           ) : null}
                         </div>
                       </div>
