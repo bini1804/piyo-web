@@ -79,11 +79,30 @@ if (process.env.AUTH_NAVER_ID && process.env.AUTH_NAVER_SECRET) {
 export const authConfig: NextAuthConfig = {
   providers,
   session: { strategy: "jwt" },
+  /** 요청 Host 기반 URL 신뢰 — 로컬/프록시에서 콜백·리디렉트 baseUrl 오류 방지 */
+  trustHost: true,
   pages: {
     signIn: "/login",
     error: "/login",
   },
   callbacks: {
+    /**
+     * 로그인 완료 후 이동: signIn()의 callbackUrl(예: "/")만 허용.
+     * 상대 경로는 현재 origin에 붙이고, 타 오리진은 무시하고 홈으로 폴백.
+     */
+    redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      try {
+        if (new URL(url).origin === baseUrl) {
+          return url;
+        }
+      } catch {
+        /* invalid url */
+      }
+      return baseUrl;
+    },
     async jwt({ token, account, profile }) {
       if (account && profile) {
         const provider = account.provider;

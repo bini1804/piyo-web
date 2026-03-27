@@ -8,7 +8,6 @@ import { checkSurvey } from "@/lib/api/user";
  */
 const EXCLUDED_PREFIXES = [
   "/survey",
-  "/login",
   "/api/",
   "/privacy",
   "/terms",
@@ -24,26 +23,34 @@ function isExcluded(pathname: string): boolean {
  * Edge Runtime 호환 미들웨어
  *
  * 흐름:
- *  1. 제외 경로 → 통과
- *  2. 비로그인 → /login 리디렉션
- *  3. 로그인 + piyo-survey-done 쿠키 있음 → 통과 (API 호출 스킵)
- *  4. 로그인 + 쿠키 없음 → /surveys/check 호출
+ *  1. /login + JWT 있음 → "/" 리디렉션
+ *  2. 제외 경로 → 통과
+ *  3. 그 외 비로그인 → /login 리디렉션
+ *  4. 로그인 + piyo-survey-done 쿠키 있음 → 통과 (API 호출 스킵)
+ *  5. 로그인 + 쿠키 없음 → /surveys/check 호출
  *     - completed: true  → piyo-survey-done 쿠키 set + 통과
  *     - completed: false → /survey 리디렉션
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 제외 경로 통과
-  if (isExcluded(pathname)) {
-    return NextResponse.next();
-  }
-
-  // JWT 토큰 확인 (Edge 호환)
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
   });
+
+  // 로그인된 사용자는 /login에 머물지 않음 (OAuth 직후·직접 접근 모두)
+  if (pathname.startsWith("/login")) {
+    if (token) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // 제외 경로 통과
+  if (isExcluded(pathname)) {
+    return NextResponse.next();
+  }
 
   // 비로그인 → 로그인 페이지
   if (!token) {
