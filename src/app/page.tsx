@@ -199,9 +199,9 @@ export default function HomePage() {
           skinType={surveyData.skin_type}
           skinSensitivity={surveyData.skin_sensitivity}
           concerns={surveyData.concerns}
-          onEditSurvey={() => {
-            setShowMypage(false);
+          onOpenSurvey={() => {
             setShowSurvey(true);
+            setSurveyInviteDismissed(false);
           }}
         />
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useSurveyStore } from "@/stores";
 import { X, ChevronRight, ChevronLeft, Check, Flower2 } from "lucide-react";
@@ -156,24 +157,63 @@ function SensitivityExplainCard({ level }: { level: number }) {
 }
 
 export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
+  const router = useRouter();
   const { data: session } = useSession();
   const { data, setField, setCompleted } = useSurveyStore();
   const [step, setStep] = useState(0);
-  const [skinDataConsent, setSkinDataConsent] = useState(false);
+  const [nickname, setNickname] = useState(
+    () => useSurveyStore.getState().data.nickname ?? ""
+  );
+  const [gender, setGender] = useState<Gender | "">(
+    () => useSurveyStore.getState().data.gender ?? ""
+  );
+  const [age, setAge] = useState<string | number>(() => {
+    const a = useSurveyStore.getState().data.age;
+    return a != null && a > 0 ? a : "";
+  });
+  const [skinType, setSkinType] = useState<SkinType | "">(
+    () => useSurveyStore.getState().data.skin_type ?? ""
+  );
+  const [skinDataConsent, setSkinDataConsent] = useState(() => {
+    const d = useSurveyStore.getState().data;
+    return Boolean(d.skin_type && d.gender);
+  });
   const [selectedConcerns, setSelectedConcerns] = useState<string[]>(() => [
-    ...(data.concerns ?? []),
+    ...(useSurveyStore.getState().data.concerns ?? []),
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
-  const selectedSkin = SKIN_TYPES.find((t) => t.value === data.skin_type);
+  useLayoutEffect(() => {
+    const pullFromStore = () => {
+      const d = useSurveyStore.getState().data;
+      setNickname(d.nickname ?? "");
+      setGender(d.gender ?? "");
+      const a = d.age;
+      setAge(a != null && a > 0 ? a : "");
+      setSkinType(d.skin_type ?? "");
+      setSelectedConcerns([...(d.concerns ?? [])]);
+      setSkinDataConsent(Boolean(d.skin_type && d.gender));
+    };
+    pullFromStore();
+    return useSurveyStore.persist.onFinishHydration(pullFromStore);
+  }, []);
+
+  const selectedSkin = SKIN_TYPES.find((t) => t.value === skinType);
+
+  const ageNum = typeof age === "number" ? age : Number(age);
 
   const canProceed = (): boolean => {
-    if (step === 0) return Boolean((data.nickname ?? "").trim());
+    if (step === 0) return Boolean(nickname.trim());
     if (step === 1)
-      return skinDataConsent && !!data.gender && !!data.age && data.age > 0;
-    if (step === 2) return Boolean(data.skin_type);
+      return (
+        skinDataConsent &&
+        !!gender &&
+        !Number.isNaN(ageNum) &&
+        ageNum > 0
+      );
+    if (step === 2) return Boolean(skinType);
     if (step === 3) return selectedConcerns.length > 0;
     return false;
   };
@@ -183,8 +223,9 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
       // 별명 입력 후 upsert (로그인 상태일 때만)
       const piyoId = session?.user?.piyo_user_id;
       const provider = session?.user?.provider;
-      if (piyoId && provider && data.nickname?.trim()) {
-        await upsertUserAction(piyoId, provider, data.nickname.trim());
+      const nick = nickname.trim();
+      if (piyoId && provider && nick) {
+        await upsertUserAction(piyoId, provider, nick);
       }
       setStep(1);
       return;
@@ -200,7 +241,7 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
     try {
       const piyoId = session?.user?.piyo_user_id;
       const provider = session?.user?.provider;
-      const nick = (data.nickname ?? "").trim();
+      const nick = nickname.trim();
       if (piyoId && provider && nick) {
         await upsertUserAction(piyoId, provider, nick);
       }
@@ -213,6 +254,7 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
         });
       }
       setCompleted(true);
+      router.push("/");
       onComplete();
     } catch (e) {
       console.error("survey submit failed:", e);
@@ -231,10 +273,11 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
   };
 
   const selectSkinType = (value: (typeof SKIN_TYPES)[number]["value"]) => {
-    if (data.skin_type !== value) {
+    if (skinType !== value) {
       setField("skin_intensity", undefined);
       setField("skin_sensitivity", undefined);
     }
+    setSkinType(value);
     setField("skin_type", value as SkinType);
   };
 
@@ -297,8 +340,12 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                 <input
                   type="text"
                   maxLength={10}
-                  value={data.nickname ?? ""}
-                  onChange={(e) => setField("nickname", e.target.value)}
+                  value={nickname}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setNickname(v);
+                    setField("nickname", v);
+                  }}
                   placeholder="예: 민지, 뽀송이, 피부왕"
                   className="w-full rounded-xl border-[1.5px] px-4 py-3 text-sm focus:outline-none focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(244,203,75,0.15)]"
                   style={{
@@ -310,7 +357,7 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                   className="text-xs text-right"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  {(data.nickname ?? "").length}/10
+                  {nickname.length}/10
                 </p>
               </div>
             )}
@@ -344,9 +391,12 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                       <button
                         key={g}
                         type="button"
-                        onClick={() => setField("gender", g)}
+                        onClick={() => {
+                          setGender(g);
+                          setField("gender", g);
+                        }}
                         className={cn(choiceBase, choiceDefault, {
-                          [choiceSelected]: data.gender === g,
+                          [choiceSelected]: gender === g,
                         })}
                       >
                         {g === "female" ? "여성" : "남성"}
@@ -365,8 +415,18 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                     type="number"
                     min={10}
                     max={99}
-                    value={data.age || ""}
-                    onChange={(e) => setField("age", Number(e.target.value))}
+                    value={age === "" ? "" : age}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        setAge("");
+                        setField("age", 0);
+                        return;
+                      }
+                      const n = Number(raw);
+                      setAge(n);
+                      setField("age", n);
+                    }}
                     placeholder="나이를 입력해주세요"
                     className="w-full rounded-xl border-[1.5px] px-4 py-3 text-sm focus:outline-none focus:border-[var(--brand)] focus:shadow-[0_0_0_3px_rgba(244,203,75,0.15)]"
                     style={{
@@ -375,7 +435,7 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                     }}
                   />
                 </div>
-                {data.gender === "female" && (
+                {gender === "female" && (
                   <div>
                     <label
                       className="text-sm font-semibold mb-2 block"
@@ -422,7 +482,7 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
                 </p>
                 <div className="flex flex-col gap-3">
                   {SKIN_TYPES.map((t) => {
-                    const sel = data.skin_type === t.value;
+                    const sel = skinType === t.value;
                     return (
                       <button
                         key={t.value}

@@ -49,7 +49,7 @@ export interface ChatMessage {
 export interface ChatResponseMetadata {
   recommended_products?: RecommendedProduct[];
   recommended_procedures?: RecommendedProduct[];
-  hospital_cards?: HospitalCard[];
+  hospital_cards?: HospitalCards;
   score?: Record<string, number>;
   status?: "RECOMMENDED" | "NO_RECOMMENDED";
 }
@@ -76,7 +76,7 @@ export interface PiyoChatResponse {
   "GPT 답변": {
     recommended_products: RecommendedProduct[];
     score: Record<string, number>;
-    hospital_cards: HospitalCard;
+    hospital_cards: HospitalCards;
     "원인_설명": string;
     status: "RECOMMENDED" | "NO_RECOMMENDED";
     qa_cards: unknown[];
@@ -117,6 +117,27 @@ export interface ProductDetail {
   ai_view_count?: number;
 }
 
+// 병원 단일 항목
+export interface HospitalInfo {
+  hospital_id: number | null;
+  name: string;
+  summary_address: string;
+  phone: string;        // tel: 링크용 정규화 번호
+  phone_raw: string;    // 화면 표시용 원본
+  booking_url: string;
+  review_score: string; // "4.5"
+  review_count: string; // "32"
+  review_link: string;
+  has_specialist: boolean;
+  is_factory: boolean;
+  distance_km: number | null;
+  hours: string;
+}
+
+// 백엔드 실제 구조: { 시술명: HospitalInfo[] }
+export type HospitalCards = Record<string, HospitalInfo[]>;
+
+// [DEPRECATED] 기존 HospitalCard 타입 — 하위 호환 유지
 export interface HospitalCard {
   hospital_name: string;
   address?: string;

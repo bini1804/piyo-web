@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "@/types";
 import ProductCard from "@/components/cards/ProductCard";
 import ProcedureCard from "@/components/cards/ProcedureCard";
+import { HospitalCard } from "@/components/cards/HospitalCard";
 import { cn } from "@/lib/utils";
 import { stripSurveyInviteFromAnswer } from "@/lib/chat-strip-survey-nudge";
 
@@ -164,6 +165,53 @@ function MessageBubble({
                   />
                 ))}
               </div>
+            </div>
+          )}
+
+        {meta?.hospital_cards &&
+          Object.keys(meta.hospital_cards).length > 0 && (
+            <div style={{ marginTop: "12px" }} className="w-full min-w-0 pl-0 md:pl-1">
+              <p
+                className="mb-2 pl-0.5"
+                style={{
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                  margin: "0 0 8px 0",
+                  fontWeight: 600,
+                }}
+              >
+                추천 병원
+              </p>
+
+              {Object.entries(meta.hospital_cards).map(
+                ([procName, hospitals]) => (
+                  <div key={procName}>
+                    {Object.keys(meta.hospital_cards!).length > 1 && (
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          color: "var(--text-muted)",
+                          margin: "0 0 6px 0",
+                        }}
+                      >
+                        {procName}
+                      </p>
+                    )}
+                    <div
+                      className="flex overflow-x-auto pb-1 scrollbar-hide"
+                      style={{ gap: "10px" }}
+                    >
+                      {hospitals.map((hosp, idx) => (
+                        <HospitalCard
+                          key={`${procName}-${hosp.hospital_id ?? idx}`}
+                          hospital={hosp}
+                          procedureName={procName}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           )}
       </div>

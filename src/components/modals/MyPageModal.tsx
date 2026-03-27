@@ -22,7 +22,8 @@ interface MyPageModalProps {
   skinType?: SkinType;
   skinSensitivity?: number;
   concerns?: string[];
-  onEditSurvey: () => void;
+  /** 마이페이지 닫은 뒤 설문 모달을 연다 (설문 스토어 data 유지) */
+  onOpenSurvey: () => void;
 }
 
 export default function MyPageModal({
@@ -32,9 +33,10 @@ export default function MyPageModal({
   skinType,
   skinSensitivity,
   concerns = [],
-  onEditSurvey,
+  onOpenSurvey,
 }: MyPageModalProps) {
   const forceReset = useSurveyStore((s) => s.forceReset);
+  const setCompleted = useSurveyStore((s) => s.setCompleted);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -116,7 +118,10 @@ export default function MyPageModal({
           <button
             type="button"
             onClick={() => {
-              onEditSurvey();
+              setCompleted(false);
+              document.cookie = "piyo-survey-done=; max-age=0; path=/";
+              onClose();
+              setTimeout(() => onOpenSurvey(), 150);
             }}
             className="w-full rounded-xl bg-[#f4cb4b] py-3 text-sm font-semibold text-[#1a1a1a] transition-opacity hover:opacity-95"
           >
