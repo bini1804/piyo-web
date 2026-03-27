@@ -59,18 +59,18 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              className="flex h-12 w-full items-center justify-center rounded-xl border border-[#E0E0E0] bg-[#FFFFFF] text-[15px] font-semibold text-[#1a1a1a] transition-colors hover:bg-[#FAFAFA] active:bg-[#F5F5F5]"
-              onClick={() => void signIn("google", { callbackUrl: "/" })}
-            >
-              구글로 계속하기
-            </button>
-            <button
-              type="button"
               className="flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold text-[#FFFFFF] transition-opacity hover:opacity-90 active:opacity-80"
               style={{ backgroundColor: "#03C75A" }}
               onClick={() => void signIn("naver", { callbackUrl: "/" })}
             >
               네이버로 계속하기
+            </button>
+            <button
+              type="button"
+              className="flex h-12 w-full items-center justify-center rounded-xl border border-[#E0E0E0] bg-[#FFFFFF] text-[15px] font-semibold text-[#1a1a1a] transition-colors hover:bg-[#FAFAFA] active:bg-[#F5F5F5]"
+              onClick={() => void signIn("google", { callbackUrl: "/" })}
+            >
+              구글로 계속하기
             </button>
           </div>
 

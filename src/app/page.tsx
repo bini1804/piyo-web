@@ -12,6 +12,9 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import WelcomeScreen from "@/components/chat/WelcomeScreen";
 import SurveyInviteInline from "@/components/chat/SurveyInviteInline";
 import SurveyModal from "@/components/onboarding/SurveyModal";
+import LoginPromptModal, {
+  isLoginModalDismissed,
+} from "@/components/modals/LoginPromptModal";
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -21,9 +24,19 @@ export default function HomePage() {
 
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyInviteDismissed, setSurveyInviteDismissed] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const isLoggedIn = !!session?.user;
   const userMessageCount = messages.filter((m) => m.role === "user").length;
+
+  // 채팅 3회 달성 시 비로그인 유저에게 로그인 권유 모달 표시
+  useEffect(() => {
+    if (userMessageCount >= 3 && !isLoggedIn && !isLoginModalDismissed()) {
+      setShowLoginModal(true);
+    }
+  }, [userMessageCount, isLoggedIn]);
+
   const showSurveyInvite =
     userMessageCount >= 1 &&
     !surveyDone &&
@@ -35,6 +48,11 @@ export default function HomePage() {
   }, [messages, isLoading, showSurveyInvite]);
 
   const openSurvey = () => {
+    // 비로그인 + 미완료 상태에서 설문 시작 시 로그인 권유 모달 먼저 표시
+    if (!isLoggedIn && !isLoginModalDismissed()) {
+      setShowLoginModal(true);
+      return;
+    }
     setShowSurvey(true);
     setSurveyInviteDismissed(false);
   };
@@ -42,7 +60,7 @@ export default function HomePage() {
   return (
     <div className="flex h-dvh w-full max-w-[100vw] overflow-hidden bg-white">
       <ChatSidebar
-        isLoggedIn={false}
+        isLoggedIn={isLoggedIn}
         onNewChat={() => {
           startNewSession();
         }}
@@ -99,6 +117,10 @@ export default function HomePage() {
           onSkip={() => setShowSurvey(false)}
           onClose={() => setShowSurvey(false)}
         />
+      )}
+
+      {showLoginModal && (
+        <LoginPromptModal onClose={() => setShowLoginModal(false)} />
       )}
     </div>
   );

@@ -26,6 +26,19 @@
   animation: piyoBlink 4s ease-in-out infinite;
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
 /* ── 스크롤바 커스텀 (웹킷) ── */
 ::-webkit-scrollbar {
   width: 4px;
