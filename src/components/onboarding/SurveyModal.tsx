@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useSurveyStore } from "@/stores";
@@ -208,6 +208,20 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
     return useSurveyStore.persist.onFinishHydration(pullFromStore);
   }, []);
 
+  // 홈에서 getSurveyDataAction 등으로 스토어가 늦게 채워질 때(모달이 먼저 열린 경우) 폼이 비어 보이지 않도록 동기화
+  useEffect(() => {
+    const d = data;
+    setNickname(d.nickname ?? "");
+    setGender(d.gender ?? "");
+    const a = d.age;
+    setAge(a != null && a > 0 ? a : "");
+    setSkinType(d.skin_type ?? "");
+    setSkinIntensity(d.skin_intensity ?? 0);
+    setSkinSensitivity(d.skin_sensitivity ?? 0);
+    setSelectedConcerns([...(d.concerns ?? [])]);
+    setSkinDataConsent(Boolean(d.skin_type && d.gender));
+  }, [data]);
+
   const selectedSkin = SKIN_TYPES.find((t) => t.value === skinType);
 
   const ageNum = typeof age === "number" ? age : Number(age);
@@ -254,11 +268,16 @@ export default function SurveyModal({ onComplete, onClose }: SurveyModalProps) {
         await upsertUserAction(piyoId, provider, nick);
       }
       if (piyoId && data.skin_type) {
+        const latest = useSurveyStore.getState().data;
         await saveSurveyAction(piyoId, {
-          skin_type: data.skin_type,
-          skin_intensity: data.skin_intensity,
-          skin_sensitivity: data.skin_sensitivity,
-          concerns: data.concerns ?? [],
+          skin_type: latest.skin_type!,
+          skin_intensity: latest.skin_intensity,
+          skin_sensitivity: latest.skin_sensitivity,
+          concerns: latest.concerns ?? [],
+          gender: latest.gender,
+          age:
+            latest.age != null && latest.age > 0 ? latest.age : undefined,
+          is_pregnant: latest.is_pregnant,
         });
       }
       setCompleted(true);

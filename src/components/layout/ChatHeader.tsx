@@ -1,9 +1,8 @@
 "use client";
 
 import { useChatStore } from "@/stores";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { PanelLeft } from "lucide-react";
+import { PiyoBrandButton } from "@/components/layout/PiyoBrandButton";
 
 interface ChatHeaderProps {
   onSurveyClick: () => void;
@@ -18,10 +17,9 @@ export default function ChatHeader({
   showSurveyButton,
 }: ChatHeaderProps) {
   const { isSidebarOpen, setSidebarOpen } = useChatStore();
-  const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between border-b border-[#efefef] bg-white/90 px-3 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex min-h-12 shrink-0 items-center justify-between border-b border-[#efefef] bg-white/90 px-3 py-1 backdrop-blur-md">
       <div className="flex min-w-0 items-center gap-2">
         {!isSidebarOpen && (
           <button
@@ -33,24 +31,8 @@ export default function ChatHeader({
             <PanelLeft className="h-5 w-5 shrink-0" strokeWidth={2} />
           </button>
         )}
-        {/* 모바일에서 피요 로고/이름 — 클릭 시 홈으로 */}
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="flex min-w-0 items-center gap-2 rounded-lg transition-colors hover:bg-[#f0f0ee] px-1 py-0.5 md:hidden"
-          aria-label="홈으로"
-        >
-          <Image
-            src="/images/piyo-default.png"
-            alt="피요"
-            width={24}
-            height={24}
-            className="h-6 w-6 shrink-0 rounded-full object-cover"
-          />
-          <span className="truncate text-sm font-semibold text-[#1a1a1a]">
-            피요
-          </span>
-        </button>
+        {/* 모바일 헤더 브랜드 — 클릭 시 홈으로 */}
+        <PiyoBrandButton variant="header" className="md:hidden" />
       </div>
       <div className="min-w-0 flex-1" />
       {showSurveyButton ? (

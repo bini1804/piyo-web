@@ -61,6 +61,9 @@ export async function getSurveyDataAction(piyo_user_id: string): Promise<{
   skin_intensity: number | null;
   skin_sensitivity: number | null;
   concerns: string[];
+  gender: string | null;
+  age: number | null;
+  is_pregnant: boolean | null;
 } | null> {
   try {
     return await getSurveyData(piyo_user_id);
@@ -76,6 +79,9 @@ export async function saveSurveyAction(
     skin_intensity?: number;
     skin_sensitivity?: number;
     concerns: string[];
+    gender?: string;
+    age?: number;
+    is_pregnant?: boolean;
   }
 ): Promise<void> {
   try {

@@ -17,19 +17,14 @@ import MyPageModal from "@/components/modals/MyPageModal";
 import LoginPromptModal, {
   isLoginModalDismissed,
 } from "@/components/modals/LoginPromptModal";
-import {
-  getUserProfileAction,
-  fetchSurveyCompletedFromServerAction,
-  getSurveyDataAction,
-} from "@/lib/actions/piyo";
-import type { SkinType } from "@/types";
+import { fetchSurveyCompletedFromServerAction } from "@/lib/actions/piyo";
+import { pullPiyoSurveyIntoStore } from "@/lib/survey-hydrate";
 
 export default function HomePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { messages, isLoading } = useChatStore();
   const { isCompleted: surveyDone, data: surveyData } = useSurveyStore();
-  const setField = useSurveyStore((s) => s.setField);
   const setCompleted = useSurveyStore((s) => s.setCompleted);
   const { sendMessage, startNewSession } = usePiyoChat();
 
@@ -61,29 +56,8 @@ export default function HomePage() {
     const id = session?.user?.piyo_user_id;
     if (!id) return;
     let cancelled = false;
-    void Promise.all([
-      getUserProfileAction(id),
-      getSurveyDataAction(id),
-    ]).then(([profile, surveyResult]) => {
+    void pullPiyoSurveyIntoStore(id, { markCompletedIfSurvey: true }).then(() => {
       if (cancelled) return;
-      if (profile.nickname?.trim()) {
-        setField("nickname", profile.nickname.trim());
-      }
-      if (surveyResult) {
-        if (surveyResult.skin_type) {
-          setField("skin_type", surveyResult.skin_type as SkinType);
-        }
-        if (surveyResult.skin_intensity != null) {
-          setField("skin_intensity", surveyResult.skin_intensity);
-        }
-        if (surveyResult.skin_sensitivity != null) {
-          setField("skin_sensitivity", surveyResult.skin_sensitivity);
-        }
-        if (surveyResult.concerns.length > 0) {
-          setField("concerns", surveyResult.concerns);
-        }
-        setCompleted(true);
-      }
     });
     return () => {
       cancelled = true;
@@ -199,9 +173,15 @@ export default function HomePage() {
           skinType={surveyData.skin_type}
           skinSensitivity={surveyData.skin_sensitivity}
           concerns={surveyData.concerns}
-          onOpenSurvey={() => {
-            setShowSurvey(true);
+          onOpenSurvey={async () => {
+            const id = session?.user?.piyo_user_id;
+            if (id) {
+              await pullPiyoSurveyIntoStore(id, {
+                markCompletedIfSurvey: false,
+              });
+            }
             setSurveyInviteDismissed(false);
+            setShowSurvey(true);
           }}
         />
       )}

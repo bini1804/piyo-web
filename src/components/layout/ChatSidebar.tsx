@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useChatStore } from "@/stores";
 import { cn, groupSessionsByDay } from "@/lib/utils";
 import type { SkinType } from "@/types";
 import { Plus, User } from "lucide-react";
+import { PiyoBrandButton } from "@/components/layout/PiyoBrandButton";
 
 const SKIN_LABEL: Record<SkinType, string> = {
   oily: "지성",
@@ -46,7 +45,6 @@ export default function ChatSidebar({
 }: SidebarProps) {
   const memberLabel = nickname?.trim() || userName?.trim() || "회원";
   const avatarLetter = (nickname?.trim() || userName || "U").slice(0, 1);
-  const router = useRouter();
   const {
     sessions,
     currentSessionId,
@@ -166,25 +164,9 @@ export default function ChatSidebar({
             "md:pointer-events-none md:w-0 md:min-w-0 md:overflow-hidden md:border-0 md:opacity-0"
         )}
       >
-        {/* 사이드바 헤더 — 피요 로고 클릭 시 홈으로 */}
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#efefef] px-3">
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="flex min-w-0 items-center gap-2 rounded-lg transition-colors hover:bg-[#f0f0ee] px-1 py-0.5"
-            aria-label="홈으로"
-          >
-            <Image
-              src="/images/piyo-default.png"
-              alt="피요"
-              width={28}
-              height={28}
-              className="h-7 w-7 shrink-0 rounded-full object-cover"
-            />
-            <span className="truncate text-sm font-semibold text-[#1a1a1a]">
-              피요
-            </span>
-          </button>
+        {/* 사이드바 헤더 — 브랜드 클릭 시 홈으로 */}
+        <div className="flex min-h-[52px] shrink-0 items-center justify-between border-b border-[#efefef] px-3 py-1.5">
+          <PiyoBrandButton variant="sidebar" />
           <button
             type="button"
             onClick={toggleSidebar}

@@ -22,8 +22,8 @@ interface MyPageModalProps {
   skinType?: SkinType;
   skinSensitivity?: number;
   concerns?: string[];
-  /** 마이페이지 닫은 뒤 설문 모달을 연다 (설문 스토어 data 유지) */
-  onOpenSurvey: () => void;
+  /** 마이페이지 닫은 뒤 설문 모달을 연기 전 서버에서 최신 설문을 스토어에 반영할 수 있음 */
+  onOpenSurvey: () => void | Promise<void>;
 }
 
 export default function MyPageModal({

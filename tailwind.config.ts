@@ -35,6 +35,14 @@ const config: Config = {
       fontFamily: {
         display: ["Outfit", "sans-serif"],
         body: ["Pretendard", "system-ui", "sans-serif"],
+        /** Claude 스타일 워드마크용 세리프 (layout에서 --font-piyo-wordmark 주입) */
+        piyoMark: [
+          "var(--font-piyo-wordmark)",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
+          "serif",
+        ],
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
