@@ -34,14 +34,14 @@ export default function WelcomeScreen({
       }}
     >
       <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center gap-0 min-h-0">
-        <div className="animate-piyo-float mb-6 flex shrink-0 justify-center">
+        <div className="mb-6 flex shrink-0 justify-center">
           <div className="animate-piyo-blink">
             <Image
               src="/characters/piyo-smile.png"
               alt="피요"
               width={120}
               height={120}
-              className="h-[120px] w-[120px] shrink-0 object-contain"
+              className="animate-piyo-float"
               priority
             />
           </div>
