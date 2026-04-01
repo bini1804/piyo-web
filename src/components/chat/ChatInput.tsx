@@ -31,8 +31,10 @@ export default function ChatInput({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const minH = 52;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    el.style.height =
+      Math.min(Math.max(el.scrollHeight, minH), 160) + "px";
   }, [value]);
 
   useEffect(() => {
@@ -89,7 +91,13 @@ export default function ChatInput({
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
-            className="scrollbar-hide min-h-[44px] max-h-40 flex-1 resize-none border-0 bg-transparent py-3 pl-3 pr-2 text-[15px] leading-relaxed text-[#1a1a1a] placeholder:text-[#b0b0b0] focus:outline-none disabled:opacity-50"
+            className="chat-input scrollbar-hide max-h-40 flex-1 resize-none border-0 bg-transparent leading-relaxed text-[#1a1a1a] focus:outline-none disabled:opacity-50"
+            style={{
+              minHeight: "52px",
+              padding: "14px 12px 14px 18px",
+              fontSize: "0.925rem",
+              borderRadius: "26px",
+            }}
           />
           <div className="flex shrink-0 flex-col justify-end pb-1 pr-0.5">
             <button

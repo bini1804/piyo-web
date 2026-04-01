@@ -26,6 +26,9 @@ async function ProductPageBody({
   const decoded = decodeURIComponent(key);
   try {
     const product = await fetchProductDetail(decoded);
+    if (!product.name?.trim()) {
+      return <ProductDetailError backPath="/" />;
+    }
     return <ProductDetail data={product} backPath="/" />;
   } catch {
     return <ProductDetailError backPath="/" />;

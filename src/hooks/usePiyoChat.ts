@@ -102,11 +102,22 @@ export function usePiyoChat() {
           longitude: userLocation.longitude ?? undefined,
         };
 
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+        const clientTimeoutMs =
+          Number(process.env.NEXT_PUBLIC_CHAT_CLIENT_TIMEOUT_MS) || 125_000;
+        const ac = new AbortController();
+        const timeoutId = setTimeout(() => ac.abort(), clientTimeoutMs);
+
+        let res: Response;
+        try {
+          res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: ac.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -129,12 +140,17 @@ export function usePiyoChat() {
         };
         addMessage(assistantMsg);
       } catch (error) {
+        const timedOut =
+          typeof error === "object" &&
+          error !== null &&
+          (error as { name?: string }).name === "AbortError";
         addMessage({
           id: uuidv4(),
           session_id: sessionId,
           role: "assistant",
-          content:
-            error instanceof Error
+          content: timedOut
+            ? "응답 시간이 너무 길어요. 피요 서버(또는 네트워크)를 확인한 뒤 다시 시도해 주세요."
+            : error instanceof Error
               ? `오류가 발생했어요: ${error.message}`
               : "알 수 없는 오류가 발생했어요.",
           created_at: new Date().toISOString(),

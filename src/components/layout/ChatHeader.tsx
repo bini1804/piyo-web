@@ -1,6 +1,7 @@
 "use client";
 
 import { useChatStore } from "@/stores";
+import { cn } from "@/lib/utils";
 import { PanelLeft } from "lucide-react";
 import { PiyoBrandButton } from "@/components/layout/PiyoBrandButton";
 
@@ -49,18 +50,11 @@ export default function ChatHeader({
           <span className="text-base leading-none" aria-hidden>
             📋
           </span>
-          <span className="hidden sm:inline">
-            {surveyCompleted ? "설문 수정" : "설문하기"}
-          </span>
-          <span className="sm:hidden">설문</span>
+          <span>{surveyCompleted ? "설문 수정" : "설문하기"}</span>
         </button>
       ) : (
         <div className="min-h-[44px] min-w-[44px] shrink-0" aria-hidden />
       )}
     </header>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]): string {
-  return classes.filter(Boolean).join(" ");
 }

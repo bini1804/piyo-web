@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond } from "next/font/google";
 import "pretendard/dist/web/static/pretendard.css";
 import "./globals.css";
-import "@/styles/globals.css";
 import { auth } from "@/auth";
 import { AppSessionProvider } from "./providers";
 

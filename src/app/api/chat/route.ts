@@ -1,7 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/utils";
-import { getMockResponse } from "@/lib/mock-data";
+import {
+  enrichRecommendationKeyFromScore,
+  normalizeRecommendedProduct,
+} from "@/lib/normalize-recommended-product";
+import { splitRecommendationsByKind } from "@/lib/recommendation-utils";
 import type { PiyoChatRequest, PiyoChatResponse } from "@/types";
+
+/**
+ * 백엔드 응답 마크다운 정규화 — 실측 패턴 기반 v3
+ *
+ * 확인된 패턴:
+ * A. "문장. ### 제목"     → 공백/\n으로 ### 이어붙음
+ * B. "문장. - **항목**"   → 공백/\n으로 - bullet 이어붙음
+ * C. "### 제목\n**본문**" → ### 뒤 \n 하나만 있고 본문 시작
+ *
+ * 제거된 패턴 (오탐 원인):
+ * X. 번호 리스트(\d+[\)\.]) 정규식 — **굵은텍스트** 앞 숫자를
+ *    번호로 오인식해서 1. 1. 중복 생성하는 버그 유발 → 제거
+ */
+function normalizeMarkdown(text: string): string {
+  return text
+    // 1. ### 앞 정규화
+    //    공백/탭/\n 조합으로 붙은 ### → \n\n### 로 통일
+    .replace(/[ \t]*\n?[ \t]*(#{1,3} )/g, "\n\n$1")
+    // 2. ### 뒤 \n 하나만 있을 때 → \n\n 으로 보강
+    //    "### 제목\n**본문**" → "### 제목\n\n**본문**"
+    .replace(/(#{1,3} [^\n]+)\n([^\n])/g, "$1\n\n$2")
+    // 3. - bullet 앞 정규화
+    //    공백/탭/\n 조합으로 붙은 - → \n\n- 로 통일
+    .replace(/([^\n])[ \t]*\n?[ \t]*(- )/g, "$1\n\n$2")
+    // 4. 연속 빈 줄 3개 이상 → 2개로 압축
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 /**
  * Vercel: 플랜별 상한이 적용됩니다 (Hobby ≈ 10초, Pro 최대 60초 등).
@@ -12,6 +44,13 @@ export const maxDuration = 60;
 
 function normalizePiyoBaseUrl(raw: string): string {
   return raw.trim().replace(/\/+$/, "");
+}
+
+/** 서버 라우트: PIYO_API_URL 우선, 없으면 NEXT_PUBLIC_PIYO_API_URL (로컬 .env.local 공통 패턴). */
+function getPiyoApiUrlFromEnv(): string {
+  const a = (process.env.PIYO_API_URL ?? "").trim();
+  if (a) return a;
+  return (process.env.NEXT_PUBLIC_PIYO_API_URL ?? "").trim();
 }
 
 function isAbortError(e: unknown): boolean {
@@ -54,24 +93,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isMock =
-      process.env.MOCK_MODE === "true" ||
-      process.env.NEXT_PUBLIC_MOCK_MODE === "true";
-
-    if (isMock) {
-      await new Promise((r) => setTimeout(r, 800 + Math.random() * 700));
-      const mock = getMockResponse(body.query);
-      return NextResponse.json(mock, {
-        headers: { "X-RateLimit-Remaining": String(remaining) },
-      });
-    }
-
-    const rawUrl = process.env.PIYO_API_URL;
-    if (!rawUrl?.trim()) {
+    const rawUrl = getPiyoApiUrlFromEnv();
+    if (!rawUrl) {
       return NextResponse.json(
         {
           error:
-            "백엔드 주소(PIYO_API_URL)가 설정되지 않았습니다. .env.local 또는 배포 환경 변수를 확인해주세요.",
+            "백엔드 주소가 설정되지 않았습니다. .env.local에 PIYO_API_URL 또는 NEXT_PUBLIC_PIYO_API_URL(예: http://localhost:8512)을 설정하세요.",
         },
         { status: 500 }
       );
@@ -103,7 +130,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "피요 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도하거나 MOCK_MODE=true로 로컬 테스트를 해보세요.",
+              "피요 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.",
           },
           { status: 504 }
         );
@@ -151,11 +178,22 @@ export async function POST(request: NextRequest) {
     }
 
     const gpt = data["GPT 답변"];
-    const answer = data["GPT 요약답변"];
+    const rawAnswer = data["GPT 요약답변"] ?? "";
+    const answer = normalizeMarkdown(rawAnswer);
 
-    const allItems = gpt?.recommended_products ?? [];
-    const products = allItems.filter((p) => p.type !== "시술");
-    const procedures = allItems.filter((p) => p.type === "시술");
+    const scoreRaw = gpt?.score as Record<string, unknown> | undefined;
+    const allItems = (gpt?.recommended_products ?? [])
+      .map(normalizeRecommendedProduct)
+      .map((p) => enrichRecommendationKeyFromScore(p, scoreRaw));
+    const { procedures, products } = splitRecommendationsByKind(allItems);
+    const hasHosp = Boolean(
+      gpt?.hospital_cards && Object.keys(gpt.hospital_cards).length > 0
+    );
+    if (gpt?.hospital_cards) {
+      const firstKey = Object.keys(gpt.hospital_cards)[0];
+      const firstHosp = gpt.hospital_cards[firstKey]?.[0];
+      console.log("[route] hospital sample:", JSON.stringify(firstHosp));
+    }
 
     return NextResponse.json(
       {
@@ -166,6 +204,12 @@ export async function POST(request: NextRequest) {
           hospital_cards: gpt?.hospital_cards,
           score: gpt?.score,
           status: gpt?.status,
+          show_procedure_cards:
+            gpt?.show_procedure_cards === true || procedures.length > 0,
+          show_product_cards:
+            gpt?.show_product_cards === true || products.length > 0,
+          show_hospital_cards:
+            gpt?.show_hospital_cards === true || hasHosp,
         },
       },
       { headers: { "X-RateLimit-Remaining": String(remaining) } }

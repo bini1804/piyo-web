@@ -49,8 +49,9 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
     });
 
     const envText = readEnvLocal();
-    const mockLine = envText.match(/^MOCK_MODE=(.+)$/m);
-    const mockModeFalse = mockLine?.[1]?.trim() === "false";
+    const hasPiyoUrl =
+      /^PIYO_API_URL=\s*\S+/m.test(envText) ||
+      /^NEXT_PUBLIC_PIYO_API_URL=\s*\S+/m.test(envText);
 
     await page.goto("/");
 
@@ -59,7 +60,7 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
     const anonId = await page.evaluate(() => sessionStorage.getItem("piyo_anonymous_id"));
     expect(anonId, "테스트1: piyo_anonymous_id 형식").toMatch(ANON);
 
-    // ----- 테스트 2: Network body + MOCK 설정 -----
+    // ----- 테스트 2: Network body + 피요 URL 설정 -----
     const rSerum = await sendAndWaitForApiChatResponse(page, "건성 피부 세럼 추천해줘");
     const serumBody = chatBodies[chatBodies.length - 1] as {
       user_id?: string;
@@ -69,9 +70,10 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
     expect(serumBody.user_id, "테스트2: user_id anon_ 시작").toMatch(/^anon_/);
     expect(String(serumBody.session_id), "테스트2: session_id 8자리 hex").toMatch(HEX8);
     expect(Array.isArray(serumBody.history), "테스트2: history 배열").toBe(true);
-    expect(mockModeFalse, "테스트2: .env.local MOCK_MODE=false (서버는 Railway 프록시 시도)").toBe(
-      true
-    );
+    expect(
+      hasPiyoUrl,
+      "테스트2: .env.local에 PIYO_API_URL 또는 NEXT_PUBLIC_PIYO_API_URL 필요"
+    ).toBe(true);
     const railwayNote = rSerum.ok
       ? "실 API 경로: /api/chat 200 (Next → PIYO_API_URL 프록시 성공)"
       : `실 API 경로: /api/chat HTTP ${rSerum.status} (업스트림 실패 시 502 — Network 탭에서 확인)`;
@@ -113,7 +115,7 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
     // 리포트용 (stdout)
     console.log("\n========== 브라우저 검증 요약 ==========");
     console.log("테스트1 sessionStorage anon_:", anonId?.startsWith("anon_") ? "통과" : "실패");
-    console.log("테스트2 body + MOCK_MODE=false:", "통과", "|", railwayNote);
+    console.log("테스트2 body + PIYO URL:", "통과", "|", railwayNote);
     console.log("  (건성 세럼 요청 응답:", rSerum.ok ? "200" : rSerum.status + ")");
     console.log(
       "테스트3 history 포함:",

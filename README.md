@@ -10,7 +10,7 @@ npm install
 
 # 2. 환경변수 설정
 cp .env.example .env.local
-# NEXT_PUBLIC_MOCK_MODE=true 로 백엔드 없이 테스트 가능
+# PIYO_API_URL 또는 NEXT_PUBLIC_PIYO_API_URL 에 FastAPI 베이스(URL, 예: http://localhost:8512)
 
 # 3. 개발 서버
 npm run dev
@@ -20,7 +20,7 @@ npm run dev
 
 ```
 Browser → Next.js (Vercel)
-           ├─ /api/chat      → Piyo Backend :8512 (or Mock)
+           ├─ /api/chat      → Piyo Backend POST /chat/v2
            ├─ /api/auth/[..] → NextAuth v5 (JWT)
            └─ Supabase        → 순수 DB (Auth 미사용)
 ```
@@ -28,7 +28,7 @@ Browser → Next.js (Vercel)
 **핵심 결정사항:**
 - **Supabase Auth 미사용** — NextAuth v5가 인증 담당, Supabase는 순수 DB
 - **RLS 미사용** — API Route에서 service_role + 세션 검증으로 접근 제어
-- **Mock Mode** — `NEXT_PUBLIC_MOCK_MODE=true`로 백엔드 없이 프론트 테스트
+- **`/api/chat`** — `PIYO_API_URL` 우선, 없으면 `NEXT_PUBLIC_PIYO_API_URL`로 피요 서버 프록시
 
 ## Project Structure (34 files)
 
@@ -67,7 +67,7 @@ piyo-web/
 │   │   ├── auth.ts                ← NextAuth v5 config
 │   │   ├── supabase.ts            ← DB client (browser + admin)
 │   │   ├── utils.ts               ← cn, UUID, rate limiter
-│   │   └── mock-data.ts           ← 목 응답 데이터
+│   │   └── …                      ← media-url, recommendation-utils 등
 │   ├── types/index.ts
 │   ├── i18n/
 │   │   ├── ko.ts

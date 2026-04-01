@@ -21,6 +21,8 @@ interface ChatState {
   toggleSidebar: () => void;
   setSidebarOpen: (b: boolean) => void;
   startNewSession: () => void;
+  /** 로그아웃 등 — 세션·메시지 전부 초기화 (persist 키는 호출부에서 제거) */
+  clearAllSessions: () => void;
   saveCurrentSession: () => void;
   loadSession: (sessionId: string) => void;
   updateSessionTitle: (sessionId: string, newTitle: string) => void;
@@ -128,6 +130,13 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
+      clearAllSessions: () =>
+        set({
+          sessions: [],
+          currentSessionId: null,
+          messages: [],
+        }),
+
       loadSession: (sessionId: string) => {
         const sess = get().sessions.find((x) => x.id === sessionId);
         if (!sess) return;
@@ -141,13 +150,18 @@ export const useChatStore = create<ChatState>()(
       },
     }),
     {
-      name: "piyo-chat-v2",
+      name: "piyo-chat-v3",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         sessions: state.sessions,
         currentSessionId: state.currentSessionId,
         messages: state.messages,
       }),
+      // 과거 스토어/수동 저장으로 localStorage에 isLoading 이 남아 있으면 재수화 시 로딩이 고착됨
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) return;
+        useChatStore.setState({ isLoading: false });
+      },
     }
   )
 );

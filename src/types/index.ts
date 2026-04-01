@@ -50,8 +50,12 @@ export interface ChatResponseMetadata {
   recommended_products?: RecommendedProduct[];
   recommended_procedures?: RecommendedProduct[];
   hospital_cards?: HospitalCards;
-  score?: Record<string, number>;
+  /** 백엔드 score는 보통 { 제품명: { key } } — 표시용이면 생략 가능 */
+  score?: Record<string, unknown>;
   status?: "RECOMMENDED" | "NO_RECOMMENDED";
+  show_procedure_cards?: boolean;
+  show_product_cards?: boolean;
+  show_hospital_cards?: boolean;
 }
 
 // ----- Piyo API -----
@@ -75,11 +79,14 @@ export interface PiyoChatRequest {
 export interface PiyoChatResponse {
   "GPT 답변": {
     recommended_products: RecommendedProduct[];
-    score: Record<string, number>;
+    score: Record<string, unknown>;
     hospital_cards: HospitalCards;
     "원인_설명": string;
     status: "RECOMMENDED" | "NO_RECOMMENDED";
     qa_cards: unknown[];
+    show_procedure_cards?: boolean;
+    show_product_cards?: boolean;
+    show_hospital_cards?: boolean;
   };
   "GPT 요약답변": string;
 }
@@ -93,6 +100,17 @@ export interface RecommendedProduct {
   category: string;
   concern?: string;
   reason?: string;
+  /** 시술 등급(S/A/B 등, 백엔드만 전달 가능) */
+  grade?: string;
+  image_url?: string;
+  /** RDS DataRegistry 해시태그를 ・ 로 이은 문자열 (앱 description 줄) */
+  hashtags?: string | null;
+  /** 원 단위 정수 (presenter가 COSM/PROC에서 채움) */
+  price?: number | string | null;
+  /** 예: 시술 "(평균가)" */
+  price_info?: string | null;
+  /** 시술 prefix 등(앱 priceUnit) */
+  price_unit?: string | null;
 }
 
 export interface ProductDetail {
@@ -100,6 +118,8 @@ export interface ProductDetail {
   name: string;
   type: string;
   category: string;
+  /** 시술 등급(상세 API data.grade) */
+  grade?: string;
   price?: number;
   brand?: string;
   description?: string;
@@ -132,6 +152,7 @@ export interface HospitalInfo {
   is_factory: boolean;
   distance_km: number | null;
   hours: string;
+  image_url?: string;
 }
 
 // 백엔드 실제 구조: { 시술명: HospitalInfo[] }

@@ -1,13 +1,16 @@
 "use client";
 import type React from "react";
+import Link from "next/link";
+import { resolveRdsMediaUrl } from "@/lib/media-url";
 import { HospitalInfo } from "@/types/index";
+import { cn } from "@/lib/utils";
 
 interface HospitalCardProps {
   hospital: HospitalInfo;
   procedureName?: string;
+  /** 앱 HospitalCard compact: 첫 카드 강조 테두리 */
+  isFirst?: boolean;
 }
-
-// ── 예약 버튼 헬퍼 ──────────────────────────────────────────
 
 type BookingType = "naver" | "kakao" | "default";
 
@@ -37,7 +40,7 @@ function BookingButton({ url }: { url: string }) {
     }
   > = {
     naver: {
-      bg: "#03C75A", // 네이버 공식 그린
+      bg: "#03C75A",
       color: "#FFFFFF",
       label: "네이버 예약",
       icon: (
@@ -47,8 +50,8 @@ function BookingButton({ url }: { url: string }) {
       ),
     },
     kakao: {
-      bg: "#FEE500", // 카카오 공식 옐로우
-      color: "#000000",
+      bg: "#FEE500",
+      color: "#191919",
       label: "카카오 예약",
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -58,7 +61,7 @@ function BookingButton({ url }: { url: string }) {
     },
     default: {
       bg: "var(--brand)",
-      color: "var(--text-primary)",
+      color: "#1a1a1a",
       label: "예약하기",
       icon: (
         <svg
@@ -118,15 +121,20 @@ function BookingButton({ url }: { url: string }) {
   );
 }
 
-// ── 메인 컴포넌트 ────────────────────────────────────────────
-
+/**
+ * 앱 `features/hospital/ui/hospital-card.tsx` variant=compact 1:1
+ * + 예약/전화 CTA (웹)
+ */
 export function HospitalCard({
   hospital,
   procedureName: _procedureName,
+  isFirst = false,
 }: HospitalCardProps) {
+  void _procedureName;
   const hasBooking = Boolean(hospital.booking_url?.trim());
   const hasPhone = Boolean(hospital.phone?.trim());
-  const hasReview = Boolean(hospital.review_score);
+  const rating = parseFloat(String(hospital.review_score || "0")) || 0;
+  const reviewCount = parseInt(String(hospital.review_count || "0"), 10) || 0;
   const hasDist =
     hospital.distance_km !== null && hospital.distance_km !== undefined;
 
@@ -136,159 +144,125 @@ export function HospitalCard({
       : `${hospital.distance_km!.toFixed(1)}km`
     : null;
 
-  return (
+  const initial = (hospital.name || "?").slice(0, 1);
+  const imgSrc = resolveRdsMediaUrl(hospital.image_url);
+  const hid = hospital.hospital_id;
+  const detailHref =
+    hid != null && Number.isFinite(hid) && hid > 0 ? `/hospital/${hid}` : null;
+
+  const cardBody = (
     <div
+      className={cn(
+        "flex w-full gap-[6px] rounded-[var(--radius-sm)] border bg-white px-4 py-2.5 text-left transition-colors hover:bg-gray-50"
+      )}
       style={{
-        width: "240px",
-        flexShrink: 0,
-        background: "var(--bg-main)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-md)",
-        padding: "14px",
-        boxShadow: "var(--shadow-sm)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.border =
-          "1px solid var(--brand)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow =
-          "var(--shadow-md)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.border =
-          "1px solid var(--border)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow =
-          "var(--shadow-sm)";
+        borderColor: isFirst ? "var(--brand-dark)" : "#f3f4f6",
+        boxShadow: "none",
       }}
     >
-      {/* 상단: 병원명 + 전문의 뱃지 */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: "6px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "15px",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            lineHeight: 1.3,
-            flex: 1,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {hospital.name || "병원명 없음"}
-        </span>
-        {hospital.has_specialist && (
-          <span
-            style={{
-              flexShrink: 0,
-              background: "var(--brand-light)",
-              border: "1px solid var(--brand)",
-              borderRadius: "var(--radius-sm)",
-              padding: "2px 7px",
-              fontSize: "10px",
-              fontWeight: 700,
-              color: "var(--brand-dark)",
-              whiteSpace: "nowrap",
-              lineHeight: 1.6,
-            }}
-          >
-            전문의
-          </span>
-        )}
-      </div>
-
-      {/* 주소 */}
-      {hospital.summary_address && (
-        <div
-          style={{
-            fontSize: "12px",
-            color: "var(--text-muted)",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "3px",
-            lineHeight: 1.4,
-          }}
-        >
-          <span style={{ flexShrink: 0 }}>📍</span>
-          <span
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {hospital.summary_address}
-          </span>
+        <div className="relative size-[70px] shrink-0 overflow-hidden rounded-[var(--radius-sm)] border border-gray-100 bg-gray-50">
+          {imgSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imgSrc}
+              alt={hospital.name}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex size-full items-center justify-center text-xl font-bold"
+              style={{
+                background: "var(--brand-light)",
+                color: "var(--brand-dark)",
+              }}
+              aria-hidden
+            >
+              {initial}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* 메타 정보: 별점 + 거리 */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          fontSize: "12px",
-          color: "var(--text-secondary)",
-        }}
-      >
-        {hasReview && (
-          <span style={{ display: "flex", alignItems: "center", gap: "3px" }}>
-            <span>⭐</span>
-            <span style={{ fontWeight: 600 }}>{hospital.review_score}</span>
-            {hospital.review_count && (
-              <span style={{ color: "var(--text-muted)" }}>
-                ({hospital.review_count})
-              </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <h4
+              className="line-clamp-2 min-w-0 flex-1 font-medium leading-5 text-neutral-700"
+              style={{
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "#404040",
+              }}
+            >
+              {hospital.name || "병원명 없음"}
+            </h4>
+            {rating > 0 && (
+              <div className="flex shrink-0 items-center gap-1">
+                <span aria-hidden className="text-[#FFCC02]">
+                  ★
+                </span>
+                <span
+                  className="text-[14px] font-semibold text-neutral-700"
+                  style={{ fontWeight: 600 }}
+                >
+                  {rating.toFixed(1)}
+                </span>
+                {reviewCount > 0 && (
+                  <span
+                    className="text-[14px] font-normal text-neutral-400"
+                    style={{ fontWeight: 400, color: "#a3a3a3" }}
+                  >
+                    {reviewCount}
+                  </span>
+                )}
+              </div>
             )}
-          </span>
-        )}
-        {distLabel && (
-          <span style={{ color: "var(--text-muted)" }}>🗺 {distLabel}</span>
-        )}
-      </div>
+          </div>
 
-      {/* 진료시간 */}
-      {hospital.hours && (
-        <div
-          style={{
-            fontSize: "11px",
-            color: "var(--text-muted)",
-            display: "flex",
-            alignItems: "center",
-            gap: "3px",
-          }}
-        >
-          <span>🕐</span>
-          <span
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {hospital.hours}
-          </span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="shrink-0 text-neutral-500" aria-hidden>
+                📍
+              </span>
+              <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[12px] leading-[18px] text-neutral-500">
+                {hospital.summary_address ? (
+                  <span className="shrink-0">{hospital.summary_address}</span>
+                ) : null}
+                {distLabel && hospital.summary_address ? (
+                  <div className="h-2 w-px shrink-0 bg-neutral-300" />
+                ) : null}
+                {distLabel ? (
+                  <span className="min-w-0 truncate">{distLabel}</span>
+                ) : null}
+              </div>
+            </div>
+            {hospital.hours ? (
+              <div className="flex min-w-0 items-center gap-1 text-[12px] leading-[18px] text-neutral-500">
+                <span className="shrink-0 text-neutral-500" aria-hidden>
+                  🕐
+                </span>
+                <span className="truncate">평일 {hospital.hours}</span>
+              </div>
+            ) : null}
+          </div>
         </div>
+      </div>
+  );
+
+  return (
+    <div className="flex w-full flex-col gap-2">
+      {detailHref ? (
+        <Link
+          href={detailHref}
+          className="block w-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
+        >
+          {cardBody}
+        </Link>
+      ) : (
+        cardBody
       )}
 
-      {/* CTA 버튼 영역 */}
       {(hasBooking || hasPhone) && (
-        <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-          {/* 예약 버튼 — URL 패턴별 분기 */}
+        <div className="flex w-full gap-1.5" style={{ minHeight: 44 }}>
           {hasBooking && <BookingButton url={hospital.booking_url} />}
-
-          {/* 전화 버튼 — 번호 숨기고 아이콘+라벨만 */}
           {hasPhone && (
             <a
               href={`tel:${hospital.phone}`}
@@ -307,16 +281,6 @@ export function HospitalCard({
                 color: "var(--text-secondary)",
                 textDecoration: "none",
                 WebkitTapHighlightColor: "transparent",
-                userSelect: "none",
-                transition: "background 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.background =
-                  "var(--bg-hover)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.background =
-                  "var(--bg-main)";
               }}
             >
               <svg
@@ -328,8 +292,9 @@ export function HospitalCard({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden
               >
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79-19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
               <span>전화</span>
             </a>

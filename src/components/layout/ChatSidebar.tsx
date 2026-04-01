@@ -153,30 +153,54 @@ export default function ChatSidebar({
   );
   const groups = groupSessionsByDay(uniqueSessions);
 
+  const profileTags: string[] = [];
+  if (skinType) profileTags.push(SKIN_LABEL[skinType]);
+  profileTags.push(...concerns);
+  const MAX_VISIBLE_TAGS = 2;
+  const visibleTags = profileTags.slice(0, MAX_VISIBLE_TAGS);
+  const hiddenCount = profileTags.length - MAX_VISIBLE_TAGS;
+
   return (
     <>
-      {/* 모바일 오버레이 — 외부 클릭 시 사이드바 닫기 */}
-      {isSidebarOpen && (
-        <button
-          type="button"
-          aria-label="사이드바 닫기"
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      <aside
+      {/*
+        단일 래퍼로 감싸 flex 부모(page)의 자식이 [사이드바 컬럼, main] 두 개만 되도록 함.
+        Fragment만 쓰면 오버레이/토스트가 flex 아이템으로 끼어 레이아웃·폭 계산이 깨질 수 있음.
+      */}
+      <div
         className={cn(
-          "z-40 flex h-dvh w-[260px] shrink-0 flex-col border-r border-[#efefef] bg-[#f7f7f5] transition-[transform,width,opacity] duration-300 ease-out",
-          "max-md:fixed max-md:left-0 max-md:top-0 max-md:shadow-[0_4px_12px_rgba(0,0,0,0.08)]",
+          "relative z-40 flex h-dvh shrink-0 flex-col transition-[width,opacity] duration-300 ease-out",
+          // 모바일: aside가 fixed라 래퍼는 항상 w-0
+          // isSidebarOpen일 때만 overflow-visible — aside가 래퍼 밖으로 나올 수 있게
+          // 닫힘 시 overflow-hidden — aside가 래퍼에 클립되어 완전히 숨김
           isSidebarOpen
-            ? "max-md:translate-x-0"
-            : "max-md:pointer-events-none max-md:-translate-x-full",
-          !isSidebarOpen &&
-            "md:pointer-events-none md:w-0 md:min-w-0 md:overflow-hidden md:border-0 md:opacity-0"
+            ? "max-md:w-0 max-md:min-w-0 max-md:overflow-visible"
+            : "max-md:w-0 max-md:min-w-0 max-md:overflow-hidden",
+          // 데스크탑: 폭·투명도·클립으로 열림/닫힘 제어
+          isSidebarOpen
+            ? "md:w-[260px] md:overflow-visible md:opacity-100"
+            : "md:pointer-events-none md:w-0 md:min-w-0 md:overflow-hidden md:opacity-0"
         )}
       >
-        {/* 사이드바 헤더 — 브랜드 클릭 시 홈으로 */}
-        <div className="flex min-h-[52px] shrink-0 items-center justify-between border-b border-[#efefef] px-3 py-1.5">
+        {/* 모바일 오버레이 — 외부 클릭 시 사이드바 닫기 */}
+        {isSidebarOpen && (
+          <button
+            type="button"
+            aria-label="사이드바 닫기"
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <aside
+          className={cn(
+            "flex h-full min-h-0 w-[260px] flex-col border-r border-[#efefef] bg-[#f7f7f5] transition-transform duration-300 ease-out",
+            "max-md:fixed max-md:left-0 max-md:top-0 max-md:h-dvh max-md:shadow-[0_4px_12px_rgba(0,0,0,0.08)]",
+            isSidebarOpen
+              ? "max-md:translate-x-0"
+              : "max-md:pointer-events-none max-md:-translate-x-full"
+          )}
+        >
+        {/* 사이드바 헤더 — 브랜드 클릭 시 Welcome(새 대화) 화면 */}
+        <div className="flex min-h-[56px] shrink-0 items-center justify-between gap-2 border-b border-[#efefef] px-3 py-2">
           <PiyoBrandButton variant="sidebar" />
           <button
             type="button"
@@ -356,21 +380,38 @@ export default function ChatSidebar({
                   <p className="truncate text-sm font-semibold text-[#1a1a1a]">
                     {memberLabel}
                   </p>
-                  {skinType && (
-                    <span className="mt-1 inline-block rounded-md bg-[#fdf6dc] px-2 py-0.5 text-[11px] font-medium text-[#1a1a1a]">
-                      {SKIN_LABEL[skinType]}
-                    </span>
-                  )}
-                  {concerns.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {concerns.slice(0, 2).map((c) => (
+                  {profileTags.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1 items-center">
+                      {visibleTags.map((tag, i) => (
                         <span
-                          key={c}
-                          className="rounded bg-[#f0f0ee] px-1.5 py-0.5 text-[11px] text-[#6b6b6b]"
+                          key={`${i}-${tag}`}
+                          style={{
+                            fontSize: "0.7rem",
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                            background: "rgba(244,203,75,0.15)",
+                            color: "#92710a",
+                            fontWeight: 500,
+                            whiteSpace: "nowrap",
+                          }}
                         >
-                          {c}
+                          {tag}
                         </span>
                       ))}
+                      {hiddenCount > 0 && (
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            padding: "2px 6px",
+                            borderRadius: "999px",
+                            background: "#f3f4f6",
+                            color: "#6b7280",
+                            fontWeight: 500,
+                          }}
+                        >
+                          +{hiddenCount}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -379,6 +420,7 @@ export default function ChatSidebar({
           )}
         </div>
       </aside>
+      </div>
 
       {/* 토스트 알림 */}
       {toast && (

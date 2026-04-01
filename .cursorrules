@@ -34,5 +34,5 @@
 - npx tsc --noEmit 에러 0개
 - npm run build 로컬 통과
 - .env.example과 실제 env 변수 동기화 확인
-- MOCK_MODE=false 상태에서 실제 API 응답 확인
+- .env.local에 PIYO_API_URL 또는 NEXT_PUBLIC_PIYO_API_URL 설정 후 실제 FastAPI 응답 확인
 ---

@@ -26,6 +26,9 @@ async function ProcedurePageBody({
   const decoded = decodeURIComponent(key);
   try {
     const product = await fetchProcedureDetail(decoded);
+    if (!product.name?.trim()) {
+      return <ProductDetailError backPath="/" />;
+    }
     return <ProductDetail data={product} backPath="/" />;
   } catch {
     return <ProductDetailError backPath="/" />;

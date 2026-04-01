@@ -9,7 +9,6 @@ import ChatSidebar from "@/components/layout/ChatSidebar";
 import ChatHeader from "@/components/layout/ChatHeader";
 import ChatInput from "@/components/chat/ChatInput";
 import MessageBubble from "@/components/chat/MessageBubble";
-import TypingIndicator from "@/components/chat/TypingIndicator";
 import WelcomeScreen from "@/components/chat/WelcomeScreen";
 import SurveyInviteInline from "@/components/chat/SurveyInviteInline";
 import SurveyModal from "@/components/onboarding/SurveyModal";
@@ -32,12 +31,33 @@ export default function HomePage() {
   const [showMypage, setShowMypage] = useState(false);
   const [surveyInviteDismissed, setSurveyInviteDismissed] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [surveyHydrated, setSurveyHydrated] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return useSurveyStore.persist?.hasHydrated?.() ?? false;
+  });
   const endRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!session?.user;
   const userMessageCount = messages.filter((m) => m.role === "user").length;
 
-  const hideSurveyChrome = isLoggedIn && surveyDone;
+  useEffect(() => {
+    const p = useSurveyStore.persist;
+    if (!p?.onFinishHydration) return;
+    const unsub = p.onFinishHydration(() => setSurveyHydrated(true));
+    if (p.hasHydrated?.()) setSurveyHydrated(true);
+    return unsub;
+  }, []);
+
+  /**
+   * 로그인 + (persist 로드 전이거나 설문 완료)이면 설문 CTA/헤더 버튼 숨김.
+   * hydrate 전에는 깜빡임 방지를 위해 설문 UI를 잠시 숨김.
+   */
+  const hideSurveyChrome =
+    isLoggedIn && (!surveyHydrated || surveyDone);
+
+  /** 답변 속 설문 유도 문단 제거 — 게스트는 로컬 완료 시에만 */
+  const stripSurveyNudgeInBubble =
+    hideSurveyChrome || (!isLoggedIn && surveyDone);
 
   useEffect(() => {
     const id = session?.user?.piyo_user_id;
@@ -72,6 +92,7 @@ export default function HomePage() {
   }, [userMessageCount, isLoggedIn]);
 
   const showSurveyInvite =
+    !isLoggedIn &&
     userMessageCount >= 1 &&
     !surveyDone &&
     !surveyInviteDismissed &&
@@ -89,8 +110,6 @@ export default function HomePage() {
     setShowSurvey(true);
     setSurveyInviteDismissed(false);
   };
-
-  const stripSurveyNudgeInBubble = isLoggedIn && surveyDone;
 
   return (
     <div className="flex h-dvh w-full max-w-[100vw] overflow-hidden bg-white">
@@ -128,14 +147,53 @@ export default function HomePage() {
             />
           ) : (
             <div className="mx-auto w-full max-w-3xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6">
-              {messages.map((m) => (
+              {messages.map((m, i) => (
                 <MessageBubble
                   key={m.id}
                   message={m}
                   hideSurveyAnswerNudge={stripSurveyNudgeInBubble}
+                  isLatest={
+                    i === messages.length - 1 && m.role === "assistant"
+                  }
                 />
               ))}
-              {isLoading && <TypingIndicator />}
+              {isLoading && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "12px 16px",
+                  }}
+                >
+                  <img
+                    src="/characters/piyo-smile.png"
+                    style={{ width: 28, height: 28, objectFit: "contain" }}
+                    alt="piyo"
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "5px",
+                      alignItems: "center",
+                    }}
+                  >
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        style={{
+                          width: "7px",
+                          height: "7px",
+                          borderRadius: "50%",
+                          background: "#F4CB4B",
+                          display: "inline-block",
+                          animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               {showSurveyInvite && (
                 <SurveyInviteInline
                   onStartSurvey={openSurvey}
@@ -151,7 +209,7 @@ export default function HomePage() {
           onSend={sendMessage}
           disabled={isLoading}
           placeholder={
-            surveyDone
+            stripSurveyNudgeInBubble
               ? "피요에게 물어보세요..."
               : "피요에게 물어보세요... (설문하면 더 정확한 추천!)"
           }
@@ -173,15 +231,15 @@ export default function HomePage() {
           skinType={surveyData.skin_type}
           skinSensitivity={surveyData.skin_sensitivity}
           concerns={surveyData.concerns}
-          onOpenSurvey={async () => {
+          onOpenSurvey={() => {
+            setSurveyInviteDismissed(false);
+            setShowSurvey(true);
             const id = session?.user?.piyo_user_id;
             if (id) {
-              await pullPiyoSurveyIntoStore(id, {
+              void pullPiyoSurveyIntoStore(id, {
                 markCompletedIfSurvey: false,
               });
             }
-            setSurveyInviteDismissed(false);
-            setShowSurvey(true);
           }}
         />
       )}

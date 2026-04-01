@@ -1,3 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand: #f4cb4b;
+    --brand-light: #fdf6dc;
+    --brand-dark: #e6b800;
+    --bg-main: #ffffff;
+    --bg-sidebar: #f7f7f5;
+    --bg-hover: #f0f0ee;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-muted: #b0b0b0;
+    --border: #efefef;
+    --bubble-user: #f4cb4b;
+    --bubble-piyo: #ffffff;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --sidebar-width: 260px;
+    --header-height: 48px;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+      sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .piyo-card {
+    @apply rounded-2xl border transition-all duration-200 ease-out;
+    border-color: var(--border);
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .piyo-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+  .typing-dot-piyo {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--text-muted);
+    animation: pulseDotPiyo 1.4s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@keyframes pulseDotPiyo {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @keyframes piyoFloat {
   0%,
   100% {
@@ -26,6 +112,29 @@
   animation: piyoBlink 4s ease-in-out infinite;
 }
 
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-7px);
+    opacity: 1;
+  }
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -39,30 +148,39 @@
   animation: slideUp 0.3s ease-out forwards;
 }
 
-/* ── 스크롤바 커스텀 (웹킷) ── */
+/* 스크롤바 — 챗 영역과 통일 (브랜드 포인트) */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #F4CB4B;
-  border-radius: 2px;
+  background: #f4cb4b;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #e6b800;
 }
 
-/* ── focus outline 브랜드 컬러 통일 ── */
 :focus-visible {
-  outline: 2px solid #F4CB4B;
+  outline: 2px solid #f4cb4b;
   outline-offset: 2px;
 }
 input:focus-visible,
 textarea:focus-visible,
 button:focus-visible {
-  outline: 2px solid #F4CB4B;
+  outline: 2px solid #f4cb4b;
   outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+.chat-input::placeholder {
+  color: rgba(107, 114, 128, 0.5);
 }

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useChatStore } from "@/stores";
 
 type Variant = "sidebar" | "header";
 
@@ -17,20 +18,27 @@ export function PiyoBrandButton({
   className?: string;
 }) {
   const router = useRouter();
+  const startNewSession = useChatStore((s) => s.startNewSession);
   const isHeader = variant === "header";
   /** 표시 크기(CSS px) — 레티나 대비 intrinsic 2배 */
-  const displayPx = isHeader ? 40 : 44;
+  const displayPx = isHeader ? 40 : 48;
   const intrinsic = displayPx * 2;
 
   return (
     <button
       type="button"
-      onClick={() => router.push("/")}
+      onClick={() => {
+        startNewSession();
+        router.push("/");
+      }}
       className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-lg px-1 py-0.5 transition-colors hover:bg-[#f0f0ee]",
+        "flex min-w-0 items-center rounded-lg transition-colors hover:bg-[#f0f0ee]",
+        isHeader
+          ? "gap-2.5 px-1 py-0.5"
+          : "gap-3 px-2 py-2",
         className
       )}
-      aria-label="홈으로"
+      aria-label="홈으로, 새 대화 화면"
     >
       <Image
         src="/images/piyo-default.png"
@@ -42,15 +50,15 @@ export function PiyoBrandButton({
         sizes={`${displayPx}px`}
         className={cn(
           "shrink-0 rounded-full object-cover",
-          isHeader ? "h-10 w-10" : "h-11 w-11"
+          isHeader ? "h-10 w-10" : "h-12 w-12"
         )}
       />
       <span
         className={cn(
           "truncate font-piyoMark font-semibold tracking-[-0.02em] text-[#1a1a1a]",
           isHeader
-            ? "text-[1.375rem] sm:text-[1.5rem] leading-none"
-            : "text-[1.5rem] leading-none sm:text-[1.625rem]"
+            ? "text-xl sm:text-[1.5rem] leading-none"
+            : "text-xl sm:text-2xl leading-none"
         )}
       >
         Piyo

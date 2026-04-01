@@ -125,6 +125,12 @@ export default function ProductDetail({ data, backPath = "/" }: ProductDetailPro
 
         <h1 className="text-2xl font-bold text-[#1a1a1a] leading-tight">{data.name}</h1>
 
+        {data.grade?.trim() && isProcedure ? (
+          <p className="text-sm font-semibold text-[#E6B800] mt-1">
+            등급 {data.grade.trim()}
+          </p>
+        ) : null}
+
         {data.brand?.trim() ? (
           <p className="text-sm text-[#999] mt-1">{data.brand}</p>
         ) : null}
@@ -230,7 +236,12 @@ export function ProductDetailError({ backPath = "/" }: { backPath?: string }) {
   const router = useRouter();
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh gap-4 bg-[#FFFFFF] px-4">
-      <p className="text-[#999]">정보를 불러올 수 없어요</p>
+      <p className="text-center text-[#666] font-medium">
+        정보를 불러올 수 없어요
+      </p>
+      <p className="text-center text-sm text-[#999] max-w-sm">
+        네트워크·서버 연결을 확인하거나, 잠시 후 다시 시도해주세요.
+      </p>
       <button
         type="button"
         onClick={() => router.push(backPath)}

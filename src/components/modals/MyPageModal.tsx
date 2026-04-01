@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import { X } from "lucide-react";
 import type { SkinType } from "@/types";
 import { SENSITIVITY_LEVELS } from "@/constants/survey";
-import { useSurveyStore } from "@/stores";
+import { useChatStore, useSurveyStore } from "@/stores";
 
 const SKIN_LABEL: Record<SkinType, string> = {
   oily: "지성",
@@ -49,7 +49,9 @@ export default function MyPageModal({
   const handleLogout = async () => {
     onClose();
     await new Promise((r) => setTimeout(r, 150));
+    useChatStore.getState().clearAllSessions();
     forceReset();
+    localStorage.removeItem("piyo-chat-v2");
     localStorage.removeItem("piyo-survey-store");
     localStorage.removeItem("login_modal_dismissed_at");
     document.cookie = "piyo-survey-done=; max-age=0; path=/";
@@ -120,8 +122,8 @@ export default function MyPageModal({
             onClick={() => {
               setCompleted(false);
               document.cookie = "piyo-survey-done=; max-age=0; path=/";
+              void onOpenSurvey();
               onClose();
-              setTimeout(() => onOpenSurvey(), 150);
             }}
             className="w-full rounded-xl bg-[#f4cb4b] py-3 text-sm font-semibold text-[#1a1a1a] transition-opacity hover:opacity-95"
           >

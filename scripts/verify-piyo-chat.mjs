@@ -3,7 +3,7 @@
  *
  * - [1] getAnonymousId: utils.ts에 anon_ + 8hex 패턴
  * - [2] usePiyoChat: session_id / history 요청 필드
- * - [3~4] /api/chat → 실 백엔드(또는 목) 응답
+ * - [3~4] /api/chat → 실 백엔드 응답
  * - [5] 새 세션: 다른 session_id + 빈 history
  *
  * 환경: VERIFY_BASE_URL (기본 http://localhost:3000)
@@ -31,16 +31,16 @@ function verifyStatic() {
   if (!hook.includes("session_id:") || !hook.includes("history")) {
     throw new Error("[2] usePiyoChat.ts: session_id 또는 history 누락");
   }
-  if (!hook.includes("resetSession")) {
-    throw new Error("[2] usePiyoChat.ts: resetSession 누락");
+  if (!hook.includes("startNewSession")) {
+    throw new Error("[2] usePiyoChat.ts: startNewSession 누락");
   }
-  console.log("✓ [2] usePiyoChat: session_id / history / resetSession");
+  console.log("✓ [2] usePiyoChat: session_id / history / startNewSession");
 
   const page = read("src/app/page.tsx");
-  if (!page.includes("resetSession") || !page.includes("setMessages([])")) {
-    throw new Error("[2] page.tsx: 새 대화 시 resetSession 연동 확인");
+  if (!page.includes("startNewSession")) {
+    throw new Error("[2] page.tsx: 새 대화 시 startNewSession 연동 확인");
   }
-  console.log("✓ [2] page.tsx: 새 대화 → resetSession + messages 초기화");
+  console.log("✓ [2] page.tsx: 새 대화 → startNewSession");
 }
 
 const BASE = process.env.VERIFY_BASE_URL || "http://localhost:3000";
@@ -112,13 +112,9 @@ async function main() {
   }
   console.log(`✓ [3] HTTP ${r1.status}, answer ${j1.answer.length}자`);
 
-  const mockDefault = "피요예요 🐥";
-  if (j1.answer.includes(mockDefault)) {
-    console.log(
-      "  (참고) 기본 목(mock) 문구 포함 — MOCK_MODE=true 이거나 문구 우연 일치일 수 있음"
-    );
-  } else {
-    console.log("✓ [3] 기본 목 지문(🐥) 없음 → 실 FastAPI 경로일 가능성 높음");
+  const sample = "피요예요 🐥";
+  if (j1.answer.includes(sample)) {
+    console.log("  (참고) 답변에 샘플 문구 포함 — 실 API여도 동일 표현 가능");
   }
 
   console.log("\n→ [4] 멀티턴: history에 이전 user/assistant 포함");

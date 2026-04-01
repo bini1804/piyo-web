@@ -41,18 +41,32 @@ export default function WelcomeScreen({
           "linear-gradient(160deg, #FFFBEF 0%, #FFF9F0 40%, #F0F7FF 100%)",
       }}
     >
-      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center gap-0 min-h-0">
-        <div className="mb-6 flex shrink-0 justify-center">
-          <div className="animate-piyo-blink">
-            <Image
-              src="/characters/piyo-smile.png"
-              alt="피요"
-              width={120}
-              height={120}
-              className="animate-piyo-float h-24 w-24 sm:h-[120px] sm:w-[120px]"
-              priority
-            />
-          </div>
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-0 min-h-0">
+        <div className="relative mb-6 flex shrink-0 items-center justify-center animate-piyo-blink">
+          <div
+            className="absolute rounded-full"
+            style={{
+              width: "160px",
+              height: "160px",
+              background:
+                "radial-gradient(circle, rgba(244,203,75,0.18) 0%, rgba(244,203,75,0.04) 65%, transparent 100%)",
+              filter: "blur(12px)",
+            }}
+            aria-hidden
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/characters/piyo-smile.png"
+            alt="피요"
+            className="animate-piyo-float relative z-[1]"
+            style={{
+              width: "120px",
+              height: "120px",
+              objectFit: "contain",
+              objectPosition: "center",
+              filter: "drop-shadow(0 8px 24px rgba(244,203,75,0.25))",
+            }}
+          />
         </div>
 
         <span
@@ -66,34 +80,89 @@ export default function WelcomeScreen({
         </span>
 
         <h1
-          className="text-center font-extrabold leading-[1.4]"
-          style={{ fontSize: "22px", color: "#1a1a1a" }}
+          className="text-center"
+          style={{
+            fontSize: "clamp(1.4rem, 3vw, 1.75rem)",
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            color: "#1a1a1a",
+            lineHeight: 1.25,
+            marginBottom: "10px",
+          }}
         >
           {mainTitle}
         </h1>
 
         <p
-          className="text-center text-sm"
-          style={{ color: "#888", marginTop: "8px" }}
+          className="text-center"
+          style={{
+            fontSize: "0.875rem",
+            color: "#9ca3af",
+            fontWeight: 400,
+            letterSpacing: "0.01em",
+          }}
         >
           피부 고민을 말씀해 주시면 맞춤 솔루션을 찾아드려요
         </p>
 
-        <div className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+        <div
+          className="quick-actions-grid mt-8 grid w-full max-w-2xl gap-3"
+          style={{
+            gridTemplateColumns: "repeat(4, 1fr)",
+          }}
+        >
           {suggestions.map((s) => (
             <button
               key={s.text}
               type="button"
               onClick={() => onSuggestionClick(s.text)}
-              className="flex flex-col items-start gap-3 rounded-2xl border border-[#efefef] bg-white p-4 text-left transition-colors hover:border-[#f4cb4b] hover:bg-[#fdf6dc]"
+              style={{
+                background: "#ffffff",
+                border: "none",
+                borderRadius: "16px",
+                padding: "20px 16px",
+                boxShadow:
+                  "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+                cursor: "pointer",
+                transition:
+                  "transform 0.18s ease, box-shadow 0.18s ease",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "10px",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.transform = "translateY(-4px)";
+                el.style.boxShadow =
+                  "0 8px 24px rgba(244,203,75,0.2), 0 2px 8px rgba(0,0,0,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.transform = "translateY(0)";
+                el.style.boxShadow =
+                  "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)";
+              }}
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center text-xl leading-none"
+                style={{
+                  fontSize: "1.5rem",
+                  lineHeight: 1,
+                  filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.08))",
+                }}
                 aria-hidden
               >
                 {s.emoji}
               </span>
-              <span className="text-sm leading-snug text-[#1a1a1a]">
+              <span
+                style={{
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  lineHeight: 1.4,
+                }}
+              >
                 {s.text}
               </span>
             </button>
