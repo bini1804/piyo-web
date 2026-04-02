@@ -22,6 +22,7 @@ import { stripSurveyInviteFromAnswer } from "@/lib/chat-strip-survey-nudge";
 import type { HospitalInfo } from "@/types";
 import { HorizontalChatSection } from "@/components/chat/HorizontalChatSection";
 import { useTypewriter } from "@/hooks/useTypewriter";
+import { FeedbackBar } from "@/components/chat/FeedbackBar";
 
 /** 병원: 앱 `HospitalCard` compact + 카드 클릭 시 `/hospital/{id}` + 예약/전화 */
 function ChatHospitalSection({
@@ -74,11 +75,13 @@ function MessageBubble({
   message,
   hideSurveyAnswerNudge = false,
   isLatest,
+  isLoggedIn,
 }: {
   message: ChatMessage;
   hideSurveyAnswerNudge?: boolean;
   /** 마지막 assistant 말풍선일 때만 타자 효과(줄 단위) */
   isLatest?: boolean;
+  isLoggedIn?: boolean;
 }) {
   const isUser = message.role === "user";
   const meta = message.metadata;
@@ -269,6 +272,14 @@ function MessageBubble({
         {showHospital && Object.keys(hospitalCards).length > 0 && (
           <ChatHospitalSection hospitalCards={hospitalCards} />
         )}
+        {/* 피드백 바 — 로그인 유저 + 타이핑 완료 + 유효 intent + chat_log_id 있을 때만 */}
+        {!isUser &&
+          done &&
+          isLoggedIn &&
+          meta?.chat_log_id &&
+          !["SMALLTALK", "FALLBACK"].includes(meta?.intent ?? "") && (
+            <FeedbackBar chatLogId={meta.chat_log_id} />
+          )}
       </div>
     </div>
   );

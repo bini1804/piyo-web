@@ -56,6 +56,10 @@ export interface ChatResponseMetadata {
   show_procedure_cards?: boolean;
   show_product_cards?: boolean;
   show_hospital_cards?: boolean;
+  /** 피드백 연결용 DB row ID */
+  chat_log_id?: string;
+  /** 인텐트 분류 결과 — 피드백 노출 조건 판단용 */
+  intent?: "SOLUTION" | "QA" | "HOSPITAL" | "SMALLTALK" | "FALLBACK";
 }
 
 // ----- Piyo API -----
@@ -87,8 +91,10 @@ export interface PiyoChatResponse {
     show_procedure_cards?: boolean;
     show_product_cards?: boolean;
     show_hospital_cards?: boolean;
+    intent?: string;
   };
   "GPT 요약답변": string;
+  chat_log_id?: string | number;
 }
 
 // ----- Cards -----

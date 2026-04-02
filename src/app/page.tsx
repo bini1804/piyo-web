@@ -155,6 +155,7 @@ export default function HomePage() {
                   isLatest={
                     i === messages.length - 1 && m.role === "assistant"
                   }
+                  isLoggedIn={isLoggedIn}
                 />
               ))}
               {isLoading && (
@@ -208,11 +209,6 @@ export default function HomePage() {
         <ChatInput
           onSend={sendMessage}
           disabled={isLoading}
-          placeholder={
-            stripSurveyNudgeInBubble
-              ? "피요에게 물어보세요..."
-              : "피요에게 물어보세요... (설문하면 더 정확한 추천!)"
-          }
         />
       </main>
 
