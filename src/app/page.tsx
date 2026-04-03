@@ -18,6 +18,7 @@ import LoginPromptModal, {
 } from "@/components/modals/LoginPromptModal";
 import { fetchSurveyCompletedFromServerAction } from "@/lib/actions/piyo";
 import { pullPiyoSurveyIntoStore } from "@/lib/survey-hydrate";
+import SurveyWelcomeModal, { isSurveyNudgeDismissed } from "@/components/modals/SurveyWelcomeModal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function HomePage() {
     if (typeof window === "undefined") return false;
     return useSurveyStore.persist?.hasHydrated?.() ?? false;
   });
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!session?.user;
@@ -101,6 +103,12 @@ export default function HomePage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading, showSurveyInvite]);
+
+  useEffect(() => {
+    if (isLoggedIn && surveyHydrated && !surveyDone && !isSurveyNudgeDismissed()) {
+      setShowWelcomeModal(true);
+    }
+  }, [isLoggedIn, surveyHydrated, surveyDone]);
 
   const openSurvey = () => {
     if (!isLoggedIn && !isLoginModalDismissed()) {
@@ -242,6 +250,16 @@ export default function HomePage() {
 
       {showLoginModal && (
         <LoginPromptModal onClose={() => setShowLoginModal(false)} />
+      )}
+
+      {showWelcomeModal && (
+        <SurveyWelcomeModal
+          onStartSurvey={() => {
+            setShowWelcomeModal(false);
+            setShowSurvey(true);
+          }}
+          onDismiss={() => setShowWelcomeModal(false)}
+        />
       )}
     </div>
   );

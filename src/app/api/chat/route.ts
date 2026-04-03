@@ -21,16 +21,16 @@ import type { PiyoChatRequest, PiyoChatResponse } from "@/types";
  */
 function normalizeMarkdown(text: string): string {
   return text
-    // 1. ### 앞 정규화
-    //    공백/탭/\n 조합으로 붙은 ### → \n\n### 로 통일
-    .replace(/[ \t]*\n?[ \t]*(#{1,3} )/g, "\n\n$1")
-    // 2. ### 뒤 \n 하나만 있을 때 → \n\n 으로 보강
-    //    "### 제목\n**본문**" → "### 제목\n\n**본문**"
+    // 1. ### 앞 공백/줄바꿈 정규화 — \n 개수 제한 없이 처리
+    //    기존 \n? (0~1개) → \n* (0개 이상) 으로 수정
+    .replace(/[ \t]*\n*[ \t]*(#{1,3} )/g, "\n\n$1")
+    // 2. 맨 앞 \n\n 제거 (치환 후 앞에 \n\n이 붙는 경우)
+    .replace(/^\n+/, "")
+    // 3. ### 뒤 \n 하나만 있을 때 → \n\n 으로 보강
     .replace(/(#{1,3} [^\n]+)\n([^\n])/g, "$1\n\n$2")
-    // 3. - bullet 앞 정규화
-    //    공백/탭/\n 조합으로 붙은 - → \n\n- 로 통일
+    // 4. - bullet 앞 정규화
     .replace(/([^\n])[ \t]*\n?[ \t]*(- )/g, "$1\n\n$2")
-    // 4. 연속 빈 줄 3개 이상 → 2개로 압축
+    // 5. 연속 빈 줄 3개 이상 → 2개로 압축
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

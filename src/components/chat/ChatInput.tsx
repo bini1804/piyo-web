@@ -14,19 +14,53 @@ import TermsModal from "@/components/modals/TermsModal";
 interface ChatInputProps {
   onSend: (msg: string) => void;
   disabled?: boolean;
-  placeholder?: string;
 }
 
 export default function ChatInput({
   onSend,
   disabled = false,
-  placeholder = "피요에게 물어보세요...",
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+
+  const PLACEHOLDERS = [
+    "피부 고민을 말씀해주세요 🌿",
+    "어떤 시술이 나에게 맞을까요?",
+    "세안 후 당기는 느낌, 긴급 처방이 필요할 때! 💧",
+    "추천 화장품이 궁금해요 ✨",
+    "내가 쓰는 화장품, 성분 궁합이 잘 맞을까요? 🧐",
+    "여드름, 모공, 주름... 뭐든 물어보세요",
+    "비싼 시술 전, 나에게 진짜 필요한지 체크해보세요 💡",
+    "오늘 피부 상태가 어떤가요?",
+    "내일 중요한 약속! 오늘 밤 홈케어 루틴은? 🌙",
+  ];
+
+  const [placeholderIdx, setPlaceholderIdx] = useState(
+    () => Math.floor(Math.random() * PLACEHOLDERS.length)
+  );
+  const placeholderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPlaceholderCycle = () => {
+    if (placeholderIntervalRef.current) return;
+    placeholderIntervalRef.current = setInterval(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDERS.length);
+    }, 10000);
+  };
+
+  const stopPlaceholderCycle = () => {
+    if (placeholderIntervalRef.current) {
+      clearInterval(placeholderIntervalRef.current);
+      placeholderIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    startPlaceholderCycle();
+    return () => stopPlaceholderCycle();
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -88,7 +122,13 @@ export default function ChatInput({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={onKey}
-            placeholder={placeholder}
+            onFocus={() => {
+              stopPlaceholderCycle();
+            }}
+            onBlur={() => {
+              if (!value) startPlaceholderCycle();
+            }}
+            placeholder={PLACEHOLDERS[placeholderIdx]}
             disabled={disabled}
             rows={1}
             className="chat-input scrollbar-hide max-h-40 flex-1 resize-none border-0 bg-transparent leading-relaxed text-[#1a1a1a] focus:outline-none disabled:opacity-50"

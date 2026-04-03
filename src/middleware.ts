@@ -38,12 +38,6 @@ export const middleware = auth((request) => {
     return NextResponse.next();
   }
 
-  // 로그인됐지만 설문 미완료 → /survey
-  const piyo_user_id = token.user?.piyo_user_id as string | undefined;
-  if (piyo_user_id) {
-    return NextResponse.redirect(new URL("/survey", request.url));
-  }
-
   return NextResponse.next();
 });
 

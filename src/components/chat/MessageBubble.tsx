@@ -200,10 +200,44 @@ function MessageBubble({
                   li: ({ children }) => (
                     <li className="text-[15px] leading-relaxed">{children}</li>
                   ),
+                  h1: ({ children }) => (
+                    <h1
+                      style={{
+                        color: "var(--text-primary)",
+                        fontSize: "20px",
+                        fontWeight: 700,
+                        lineHeight: 1.4,
+                        marginTop: "24px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2
+                      style={{
+                        color: "var(--text-primary)",
+                        fontSize: "18px",
+                        fontWeight: 700,
+                        lineHeight: 1.4,
+                        marginTop: "20px",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {children}
+                    </h2>
+                  ),
                   h3: ({ children }) => (
                     <h3
-                      className="mt-3 mb-1 text-sm font-semibold"
-                      style={{ color: "var(--text-primary)" }}
+                      style={{
+                        color: "var(--text-primary)",
+                        fontSize: "17px",
+                        fontWeight: 700,
+                        lineHeight: 1.4,
+                        marginTop: "20px",
+                        marginBottom: "6px",
+                      }}
                     >
                       {children}
                     </h3>

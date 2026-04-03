@@ -5,9 +5,32 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+
+const LoginTooltip = ({ text }: { text: string }) => {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative rounded-full bg-white px-4 py-2 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.1)]">
+        <span className="text-sm font-medium whitespace-nowrap text-[#1a1a1a]">
+          {text}
+        </span>
+      </div>
+      <div className="relative h-1.5 w-3">
+        <svg width="12" height="6" viewBox="0 0 12 6" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-full">
+          <path d="M6 6L0 0H12L6 6Z" fill="white" />
+        </svg>
+      </div>
+    </div>
+  );
+};
 
 export default function LoginPage() {
   const router = useRouter();
+  const [lastProvider, setLastProvider] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastProvider(localStorage.getItem("piyo-last-provider"));
+  }, []);
 
   return (
     <div
@@ -49,26 +72,43 @@ export default function LoginPage() {
           </p>
 
           <div className="mt-8 flex w-full flex-col gap-3">
+            {/* 카카오 말풍선 */}
+            {lastProvider === "kakao" && <LoginTooltip text="지난번에 카카오로 로그인했어요" />}
             <button
               type="button"
               className="flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold text-[#000000] transition-opacity hover:opacity-90 active:opacity-80"
               style={{ backgroundColor: "#FEE500" }}
-              onClick={() => void signIn("kakao", { callbackUrl: "/" })}
+              onClick={() => {
+                localStorage.setItem("piyo-last-provider", "kakao");
+                void signIn("kakao", { callbackUrl: "/" });
+              }}
             >
               카카오로 계속하기
             </button>
+
+            {/* 네이버 말풍선 */}
+            {lastProvider === "naver" && <LoginTooltip text="지난번에 네이버로 로그인했어요" />}
             <button
               type="button"
               className="flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold text-[#FFFFFF] transition-opacity hover:opacity-90 active:opacity-80"
               style={{ backgroundColor: "#03C75A" }}
-              onClick={() => void signIn("naver", { callbackUrl: "/" })}
+              onClick={() => {
+                localStorage.setItem("piyo-last-provider", "naver");
+                void signIn("naver", { callbackUrl: "/" });
+              }}
             >
               네이버로 계속하기
             </button>
+
+            {/* 구글 말풍선 */}
+            {lastProvider === "google" && <LoginTooltip text="지난번에 구글로 로그인했어요" />}
             <button
               type="button"
               className="flex h-12 w-full items-center justify-center rounded-xl border border-[#E0E0E0] bg-[#FFFFFF] text-[15px] font-semibold text-[#1a1a1a] transition-colors hover:bg-[#FAFAFA] active:bg-[#F5F5F5]"
-              onClick={() => void signIn("google", { callbackUrl: "/" })}
+              onClick={() => {
+                localStorage.setItem("piyo-last-provider", "google");
+                void signIn("google", { callbackUrl: "/" });
+              }}
             >
               구글로 계속하기
             </button>
