@@ -49,9 +49,7 @@ export default function MyPageModal({
   const handleLogout = async () => {
     onClose();
     await new Promise((r) => setTimeout(r, 150));
-    useChatStore.getState().clearAllSessions();
     forceReset();
-    localStorage.removeItem("piyo-chat-v3");
     localStorage.removeItem("piyo-survey-store");
     localStorage.removeItem("login_modal_dismissed_at");
     document.cookie = "piyo-survey-done=; max-age=0; path=/";

@@ -7,6 +7,12 @@
 
 import { cookies } from "next/headers";
 import { upsertUser, saveSurvey, getUserProfile, checkSurvey, getSurveyData } from "@/lib/api/user";
+import {
+  saveChatSession,
+  getChatSessions,
+  deleteChatSession,
+  type ChatSessionItem,
+} from "@/lib/api/user";
 
 const SURVEY_DONE_COOKIE = "piyo-survey-done";
 
@@ -89,5 +95,43 @@ export async function saveSurveyAction(
     await setSurveyDoneCookie();
   } catch (e) {
     console.error("[saveSurveyAction] failed:", e);
+  }
+}
+
+// ── 채팅 세션 서버 액션 ──────────────────────────────
+
+export async function saveChatSessionAction(params: {
+  piyo_user_id: string;
+  session_id: string;
+  title: string | null;
+  messages: unknown[];
+  has_feedback: boolean;
+}): Promise<void> {
+  try {
+    await saveChatSession(params);
+  } catch (e) {
+    console.error("[saveChatSessionAction] failed:", e);
+  }
+}
+
+export async function getChatSessionsAction(
+  piyo_user_id: string
+): Promise<ChatSessionItem[]> {
+  try {
+    return await getChatSessions(piyo_user_id);
+  } catch (e) {
+    console.error("[getChatSessionsAction] failed:", e);
+    return [];
+  }
+}
+
+export async function deleteChatSessionAction(
+  piyo_user_id: string,
+  session_id: string
+): Promise<void> {
+  try {
+    await deleteChatSession(piyo_user_id, session_id);
+  } catch (e) {
+    console.error("[deleteChatSessionAction] failed:", e);
   }
 }

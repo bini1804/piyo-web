@@ -19,6 +19,7 @@ import LoginPromptModal, {
 import { fetchSurveyCompletedFromServerAction } from "@/lib/actions/piyo";
 import { pullPiyoSurveyIntoStore } from "@/lib/survey-hydrate";
 import SurveyWelcomeModal, { isSurveyNudgeDismissed } from "@/components/modals/SurveyWelcomeModal";
+import { getChatSessionsAction } from "@/lib/actions/piyo";
 
 export default function HomePage() {
   const router = useRouter();
@@ -109,6 +110,39 @@ export default function HomePage() {
       setShowWelcomeModal(true);
     }
   }, [isLoggedIn, surveyHydrated, surveyDone]);
+
+  useEffect(() => {
+    const piyoId = session?.user?.piyo_user_id;
+    if (!piyoId) return;
+
+    // 다른 계정 재로그인 시 로컬 스토어 초기화
+    const prevId = localStorage.getItem("piyo-last-user-id");
+    if (prevId && prevId !== piyoId) {
+      useChatStore.getState().clearAllSessions();
+      localStorage.removeItem("piyo-chat-v3");
+    }
+    localStorage.setItem("piyo-last-user-id", piyoId);
+
+    // 로컬 스토어가 비어있을 때만 RDS에서 복원
+    const localSessions = useChatStore.getState().sessions;
+    if (localSessions.length > 0) return;
+
+    void getChatSessionsAction(piyoId).then((sessions) => {
+      if (!sessions || sessions.length === 0) return;
+      const chatSessions = sessions.map((s) => ({
+        id: s.session_id,
+        title: s.title ?? "이전 대화",
+        messages: (s.messages as import("@/types").ChatMessage[]) ?? [],
+        createdAt: s.created_at ?? new Date().toISOString(),
+        updatedAt: s.updated_at ?? new Date().toISOString(),
+      }));
+      useChatStore.setState({
+        sessions: chatSessions,
+        currentSessionId: chatSessions[0]?.id ?? null,
+        messages: chatSessions[0]?.messages ?? [],
+      });
+    });
+  }, [session?.user?.piyo_user_id]);
 
   const openSurvey = () => {
     if (!isLoggedIn && !isLoginModalDismissed()) {

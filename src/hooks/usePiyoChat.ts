@@ -6,6 +6,7 @@ import { useChatStore, useSurveyStore } from "@/stores";
 import { getAnonymousId } from "@/lib/utils";
 import type { ChatMessage, ChatResponseMetadata, PiyoChatRequest } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+import { saveChatSessionAction } from "@/lib/actions/piyo";
 
 function newSessionId(): string {
   return uuidv4().replace(/-/g, "").slice(0, 8);
@@ -158,6 +159,19 @@ export function usePiyoChat() {
       } finally {
         setLoading(false);
         saveCurrentSession();
+        // 로그인 유저만 RDS에 세션 저장
+        if (session?.user?.piyo_user_id) {
+          const state = useChatStore.getState();
+          const allMessages = state.messages;
+          const title = allMessages[0]?.content?.slice(0, 30) ?? null;
+          void saveChatSessionAction({
+            piyo_user_id: session.user.piyo_user_id,
+            session_id: sessionId,
+            title,
+            messages: allMessages,
+            has_feedback: false,
+          });
+        }
       }
     },
     [

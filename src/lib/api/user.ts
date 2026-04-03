@@ -148,3 +148,59 @@ export async function checkSurvey(piyo_user_id: string): Promise<boolean> {
     return true;
   }
 }
+
+// ── 채팅 세션 저장/조회/삭제 ──────────────────────────────
+
+export interface ChatSessionItem {
+  session_id: string;
+  title: string | null;
+  messages: unknown[];
+  message_count: number;
+  has_feedback: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export async function saveChatSession(params: {
+  piyo_user_id: string;
+  session_id: string;
+  title: string | null;
+  messages: unknown[];
+  has_feedback: boolean;
+}): Promise<{ ok: boolean }> {
+  const base = getPiyoBase();
+  const res = await fetch(`${base}/chat-sessions/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`saveChatSession failed: ${res.status}`);
+  return res.json() as Promise<{ ok: boolean }>;
+}
+
+export async function getChatSessions(
+  piyo_user_id: string
+): Promise<ChatSessionItem[]> {
+  const base = getPiyoBase();
+  const res = await fetch(
+    `${base}/chat-sessions/list?user_id=${encodeURIComponent(piyo_user_id)}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as { sessions: ChatSessionItem[] };
+  return data.sessions ?? [];
+}
+
+export async function deleteChatSession(
+  piyo_user_id: string,
+  session_id: string
+): Promise<{ ok: boolean }> {
+  const base = getPiyoBase();
+  const res = await fetch(
+    `${base}/chat-sessions/${encodeURIComponent(session_id)}?user_id=${encodeURIComponent(piyo_user_id)}`,
+    { method: "DELETE", cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`deleteChatSession failed: ${res.status}`);
+  return res.json() as Promise<{ ok: boolean }>;
+}
