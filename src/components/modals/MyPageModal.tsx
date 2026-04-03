@@ -50,8 +50,13 @@ export default function MyPageModal({
     onClose();
     await new Promise((r) => setTimeout(r, 150));
     forceReset();
+    // 로컬 채팅 스토어 초기화 (화면에서 즉시 제거)
+    // RDS 데이터는 유지 — 재로그인 시 복원됨
+    useChatStore.getState().clearAllSessions();
+    localStorage.removeItem("piyo-chat-v3");
     localStorage.removeItem("piyo-survey-store");
     localStorage.removeItem("login_modal_dismissed_at");
+    localStorage.removeItem("piyo-last-user-id");
     document.cookie = "piyo-survey-done=; max-age=0; path=/";
     await signOut({ callbackUrl: "/" });
   };

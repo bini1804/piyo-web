@@ -2,58 +2,66 @@ import { useState, useEffect, useRef } from "react";
 
 export function useTypewriter(text: string | undefined, enabled: boolean = true) {
   const safeText = text ?? "";
-  const lines = safeText.split("\n");
-
-  const [visibleCount, setVisibleCount] = useState(
-    enabled ? 0 : lines.length
+  const [displayedChars, setDisplayedChars] = useState(
+    enabled ? 0 : safeText.length
   );
   const [done, setDone] = useState(!enabled);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // 기존 interval 즉시 정리
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
 
-    const newLines = safeText.split("\n");
-
     if (!enabled) {
-      setVisibleCount(newLines.length);
+      setDisplayedChars(safeText.length);
       setDone(true);
       return;
     }
 
-    setVisibleCount(0);
+    setDisplayedChars(0);
     setDone(false);
+    startTimeRef.current = null;
 
-    // 줄 수에 따라 속도 조절
-    const speed =
-      newLines.length > 20 ? 30 :
-      newLines.length > 10 ? 45 : 60;
+    const totalChars = safeText.length;
+    if (totalChars === 0) {
+      setDone(true);
+      return;
+    }
 
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      current++;
-      setVisibleCount(current);
-      if (current >= newLines.length) {
-        clearInterval(intervalRef.current!);
-        intervalRef.current = null;
+    // 전체 길이에 따라 속도 조절 (ms per char)
+    const msPerChar =
+      totalChars > 300 ? 8 :
+      totalChars > 150 ? 12 : 18;
+
+    const animate = (timestamp: number) => {
+      if (!startTimeRef.current) startTimeRef.current = timestamp;
+      const elapsed = timestamp - startTimeRef.current;
+      const charsToShow = Math.min(
+        Math.floor(elapsed / msPerChar) + 1,
+        totalChars
+      );
+      setDisplayedChars(charsToShow);
+      if (charsToShow < totalChars) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
         setDone(true);
+        rafRef.current = null;
       }
-    }, speed);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
     };
   }, [safeText, enabled]);
 
-  // 완성된 줄만 join — 마크다운 블록이 완성된 상태로 전달됨
-  const displayed = lines.slice(0, visibleCount).join("\n");
-
+  const displayed = safeText.slice(0, displayedChars);
   return { displayed, done };
 }

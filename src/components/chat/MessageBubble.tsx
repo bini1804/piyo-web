@@ -93,7 +93,9 @@ function MessageBubble({
   const safeContent = displayContent ?? "";
   // 마크다운(### 등)은 문자 단위 스트리밍 시 불완전 파싱으로 리터럴이 보일 수 있어
   // 피요 답변은 전체 텍스트를 한 번에 ReactMarkdown에 넘긴다.
-  const { displayed, done } = useTypewriter(safeContent, isLatest ?? false);
+  // isRestored 플래그가 있으면 타이핑 애니메이션 스킵
+  const isRestored = !!(message as ChatMessage & { isRestored?: boolean }).isRestored;
+  const { displayed, done } = useTypewriter(safeContent, (isLatest ?? false) && !isRestored);
 
   const scoreMap = meta?.score as Record<string, unknown> | undefined;
   const proceduresRaw = (meta?.recommended_procedures ?? [])

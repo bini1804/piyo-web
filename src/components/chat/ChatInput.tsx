@@ -27,15 +27,16 @@ export default function ChatInput({
   const [showTerms, setShowTerms] = useState(false);
 
   const PLACEHOLDERS = [
-    "피부 고민을 말씀해주세요 🌿",
-    "어떤 시술이 나에게 맞을까요?",
-    "세안 후 당기는 느낌, 긴급 처방이 필요할 때! 💧",
-    "추천 화장품이 궁금해요 ✨",
-    "내가 쓰는 화장품, 성분 궁합이 잘 맞을까요? 🧐",
-    "여드름, 모공, 주름... 뭐든 물어보세요",
-    "비싼 시술 전, 나에게 진짜 필요한지 체크해보세요 💡",
-    "오늘 피부 상태가 어떤가요?",
-    "내일 중요한 약속! 오늘 밤 홈케어 루틴은? 🌙",
+    "막막한 피부 고민, 피요와 나누면 해답이 보여요 🧐✨",
+    "피부 고민, 무엇이든 말씀해주세요 🌿",
+    "결제 전 확인! 🛡️ 이 시술이 나에게 진짜 필요할까?",
+    "망설여지는 시술 전, 확신을 더해드릴게요 🛡️",
+    "유행하는 리쥬란, 나한테도 효과가 있을까요? 🧐✨",
+    "내 피부 타입에 딱 맞는 앰플을 찾고 있다면? 🔍💎",
+    "레티놀과 비타민C 🧪 같이 써도 괜찮을까요?",
+    "여드름·모공·주름... 피요에게 고민 상담하기 🫧🪄",
+    "오늘 내 피부 컨디션, 어떤 케어가 필요할까요? 💬",
+    "내일은 중요한 날! 🌙 오늘 밤 '치트키' 홈케어 루틴은?",
   ];
 
   const [placeholderIdx, setPlaceholderIdx] = useState(
@@ -47,7 +48,7 @@ export default function ChatInput({
     if (placeholderIntervalRef.current) return;
     placeholderIntervalRef.current = setInterval(() => {
       setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDERS.length);
-    }, 10000);
+    }, 3000);
   };
 
   const stopPlaceholderCycle = () => {
@@ -131,7 +132,7 @@ export default function ChatInput({
             placeholder={PLACEHOLDERS[placeholderIdx]}
             disabled={disabled}
             rows={1}
-            className="chat-input scrollbar-hide max-h-40 flex-1 resize-none border-0 bg-transparent leading-relaxed text-[#1a1a1a] focus:outline-none disabled:opacity-50"
+            className="chat-input scrollbar-hide max-h-40 flex-1 resize-none border-0 bg-transparent leading-relaxed text-[#1a1a1a] focus:outline-none disabled:opacity-50 placeholder:text-[#AAAAAA]"
             style={{
               minHeight: "52px",
               padding: "14px 12px 14px 18px",

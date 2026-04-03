@@ -136,10 +136,16 @@ export default function HomePage() {
         createdAt: s.created_at ?? new Date().toISOString(),
         updatedAt: s.updated_at ?? new Date().toISOString(),
       }));
+      const latestSession = chatSessions[0];
+      // 복원된 메시지는 isRestored 플래그 추가 — 타이핑 애니메이션 스킵
+      const restoredMessages = (latestSession?.messages ?? []).map((m) => ({
+        ...m,
+        isRestored: true,
+      }));
       useChatStore.setState({
         sessions: chatSessions,
-        currentSessionId: chatSessions[0]?.id ?? null,
-        messages: chatSessions[0]?.messages ?? [],
+        currentSessionId: latestSession?.id ?? null,
+        messages: restoredMessages,
       });
     });
   }, [session?.user?.piyo_user_id]);
