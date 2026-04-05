@@ -166,6 +166,17 @@ function MessageBubble({
             : "max-w-[min(100%,28rem)] items-start sm:max-w-[75%]"
         )}
       >
+        {message.preLogin && (
+          <span
+            className={cn(
+              "text-[11px] leading-4",
+              isUser ? "self-end" : "self-start"
+            )}
+            style={{ color: "var(--text-muted)" }}
+          >
+            [로그인 전]
+          </span>
+        )}
         <div
           className="break-words"
           style={

@@ -25,7 +25,10 @@ function verifyStatic() {
   if (!utils.includes("anon_") || !utils.includes('slice(0, 8)')) {
     throw new Error("[1] utils.ts: anon_ + UUID8 패턴이 없습니다.");
   }
-  console.log("✓ [1] sessionStorage용 getAnonymousId: 코드상 anon_ + 8 hex");
+  if (!utils.includes("localStorage") || utils.includes("sessionStorage.getItem(\"piyo_anonymous_id\")")) {
+    throw new Error("[1] utils.ts: getAnonymousId는 localStorage를 사용해야 합니다.");
+  }
+  console.log("✓ [1] localStorage용 getAnonymousId: 코드상 anon_ + 8 hex");
 
   const hook = read("src/hooks/usePiyoChat.ts");
   if (!hook.includes("session_id:") || !hook.includes("history")) {
@@ -149,7 +152,7 @@ async function main() {
 
   console.log(
     "\n========== 자동 검증 완료 ==========\n" +
-      "브라우저 수동 확인: Application → sessionStorage → piyo_anonymous_id 가 anon_ 로 시작하는지,\n" +
+      "브라우저 수동 확인: Application → Local Storage → piyo_anonymous_id 가 anon_ 로 시작하는지,\n" +
       "Network → /api/chat Payload에 session_id·history 포함 여부."
   );
 }

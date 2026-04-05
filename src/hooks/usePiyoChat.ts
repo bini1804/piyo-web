@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useChatStore, useSurveyStore } from "@/stores";
-import { getAnonymousId } from "@/lib/utils";
+import { getAnonymousId, PIYO_ANON_PENDING_KEY } from "@/lib/utils";
 import type { ChatMessage, ChatResponseMetadata, PiyoChatRequest } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 import { saveChatSessionAction } from "@/lib/actions/piyo";
@@ -58,6 +58,8 @@ export function usePiyoChat() {
     useChatStore.getState().startNewSession();
   }, []);
 
+  const isGuest = !session?.user?.piyo_user_id;
+
   const sendMessage = useCallback(
     async (query: string) => {
       if (isLoading) return;
@@ -81,6 +83,7 @@ export function usePiyoChat() {
         role: "user",
         content: query,
         created_at: new Date().toISOString(),
+        ...(isGuest ? { createdAsGuest: true } : {}),
       };
       addMessage(userMsg);
       setLoading(true);
@@ -138,6 +141,7 @@ export function usePiyoChat() {
           content: data.answer || "죄송해요, 답변을 생성하지 못했어요.",
           metadata: (data.metadata as ChatResponseMetadata) || {},
           created_at: new Date().toISOString(),
+          ...(isGuest ? { createdAsGuest: true } : {}),
         };
         addMessage(assistantMsg);
       } catch (error) {
@@ -155,10 +159,18 @@ export function usePiyoChat() {
               ? `오류가 발생했어요: ${error.message}`
               : "알 수 없는 오류가 발생했어요.",
           created_at: new Date().toISOString(),
+          ...(isGuest ? { createdAsGuest: true } : {}),
         });
       } finally {
         setLoading(false);
         saveCurrentSession();
+        if (isGuest && typeof window !== "undefined") {
+          try {
+            localStorage.setItem(PIYO_ANON_PENDING_KEY, getAnonymousId());
+          } catch {
+            /* private mode 등 */
+          }
+        }
         // 로그인 유저만 RDS에 세션 저장
         if (session?.user?.piyo_user_id) {
           const state = useChatStore.getState();
@@ -178,6 +190,7 @@ export function usePiyoChat() {
       addMessage,
       setLoading,
       isLoading,
+      isGuest,
       survey,
       messages,
       saveCurrentSession,

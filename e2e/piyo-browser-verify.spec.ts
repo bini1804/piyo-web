@@ -1,7 +1,7 @@
 /**
  * 브라우저 수동 테스트 1~4와 동등한 자동 검증 (Playwright)
  *
- * Railway 등 백엔드가 502여도 요청 페이로드·sessionStorage는 검증 가능.
+ * Railway 등 백엔드가 502여도 요청 페이로드·localStorage는 검증 가능.
  * 테스트 3 답변 문맥은 HTTP 200일 때만 엄격 검증.
  */
 import { test, expect } from "@playwright/test";
@@ -56,8 +56,10 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
     await page.goto("/");
 
     const r0 = await sendAndWaitForApiChatResponse(page, "연결 확인");
-    // ----- 테스트 1: sessionStorage (첫 전송 시 anon_ 저장) -----
-    const anonId = await page.evaluate(() => sessionStorage.getItem("piyo_anonymous_id"));
+    // ----- 테스트 1: localStorage (첫 전송 시 anon_ 저장) -----
+    const anonId = await page.evaluate(() =>
+      localStorage.getItem("piyo_anonymous_id")
+    );
     expect(anonId, "테스트1: piyo_anonymous_id 형식").toMatch(ANON);
 
     // ----- 테스트 2: Network body + 피요 URL 설정 -----
@@ -114,7 +116,7 @@ test.describe("Piyo 브라우저 검증 (수동 테스트 1~4 대응)", () => {
 
     // 리포트용 (stdout)
     console.log("\n========== 브라우저 검증 요약 ==========");
-    console.log("테스트1 sessionStorage anon_:", anonId?.startsWith("anon_") ? "통과" : "실패");
+    console.log("테스트1 localStorage anon_:", anonId?.startsWith("anon_") ? "통과" : "실패");
     console.log("테스트2 body + PIYO URL:", "통과", "|", railwayNote);
     console.log("  (건성 세럼 요청 응답:", rSerum.ok ? "200" : rSerum.status + ")");
     console.log(

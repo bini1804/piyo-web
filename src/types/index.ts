@@ -46,6 +46,10 @@ export interface ChatMessage {
   created_at: string;
   /** 타이핑 애니메이션 완료(또는 스킵) 후 true — 세션 전환·복원 시 재생 방지 */
   animated?: boolean;
+  /** 게스트 대화를 로그인 직후 병합한 메시지 — 소셜↔소셜 전환·RDS 복원 메시지에는 붙이지 않음 */
+  preLogin?: boolean;
+  /** 비로그인 상태에서 생성됨 — 로그인 시에만 preLogin 으로 승격(소셜↔소셜 오탐 방지) */
+  createdAsGuest?: boolean;
 }
 
 export interface ChatResponseMetadata {
