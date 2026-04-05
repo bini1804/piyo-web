@@ -23,15 +23,28 @@ export const metadata: Metadata = {
     siteName: "Piyo by YouAre365",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "https://piyo.youare365.com/og-image.png",
+        width: 1024,
+        height: 500,
+        alt: "피요 — 나만의 AI 뷰티 컨시어지",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "피요 — 나만의 AI 뷰티 컨시어지",
     description: "피부 고민, 피요에게 물어보세요.",
+    images: ["https://piyo.youare365.com/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
+  },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
