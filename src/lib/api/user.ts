@@ -20,6 +20,14 @@ function getPiyoBase(): string {
   return url.replace(/\/$/, "");
 }
 
+function getPiyoHeaders(): HeadersInit {
+  const key = process.env.PIYO_API_KEY ?? "";
+  return {
+    "Content-Type": "application/json",
+    ...(key && { Authorization: `Bearer ${key}` }),
+  };
+}
+
 export type PiyoUserProfile = {
   piyo_user_id: string;
   nickname: string | null;
@@ -33,7 +41,7 @@ export async function getUserProfile(
   const base = getPiyoBase();
   const res = await fetch(
     `${base}/users/profile?user_id=${encodeURIComponent(piyo_user_id)}`,
-    { cache: "no-store" }
+    { cache: "no-store", headers: getPiyoHeaders() }
   );
   if (!res.ok) {
     throw new Error(`getUserProfile failed: ${res.status}`);
@@ -48,7 +56,7 @@ export async function findUserByEmail(
   const base = getPiyoBase();
   const res = await fetch(
     `${base}/users/find-by-email?email=${encodeURIComponent(email)}`,
-    { cache: "no-store" }
+    { cache: "no-store", headers: getPiyoHeaders() }
   );
   if (!res.ok) return null;
   const data = (await res.json()) as { piyo_user_id: string | null };
@@ -65,7 +73,7 @@ export async function upsertUser(
   const base = getPiyoBase();
   const res = await fetch(`${base}/users/upsert`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getPiyoHeaders(),
     body: JSON.stringify({ piyo_user_id, provider, nickname, email: email ?? null }),
     cache: "no-store",
   });
@@ -91,7 +99,7 @@ export async function saveSurvey(
   const base = getPiyoBase();
   const res = await fetch(`${base}/surveys/save`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getPiyoHeaders(),
     body: JSON.stringify({ piyo_user_id, ...surveyData }),
     cache: "no-store",
   });
@@ -115,7 +123,7 @@ export async function getSurveyData(piyo_user_id: string): Promise<{
   try {
     const res = await fetch(
       `${base}/surveys/data?user_id=${encodeURIComponent(piyo_user_id)}`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: getPiyoHeaders() }
     );
     if (!res.ok) return null;
     return res.json() as Promise<{
@@ -138,7 +146,7 @@ export async function checkSurvey(piyo_user_id: string): Promise<boolean> {
   try {
     const res = await fetch(
       `${base}/surveys/check?user_id=${encodeURIComponent(piyo_user_id)}`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: getPiyoHeaders() }
     );
     if (!res.ok) return false;
     const data = (await res.json()) as { completed: boolean };
@@ -171,7 +179,7 @@ export async function saveChatSession(params: {
   const base = getPiyoBase();
   const res = await fetch(`${base}/chat-sessions/save`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getPiyoHeaders(),
     body: JSON.stringify(params),
     cache: "no-store",
   });
@@ -185,7 +193,7 @@ export async function getChatSessions(
   const base = getPiyoBase();
   const res = await fetch(
     `${base}/chat-sessions/list?user_id=${encodeURIComponent(piyo_user_id)}`,
-    { cache: "no-store" }
+    { cache: "no-store", headers: getPiyoHeaders() }
   );
   if (!res.ok) return [];
   const data = (await res.json()) as { sessions: ChatSessionItem[] };
@@ -199,7 +207,7 @@ export async function deleteChatSession(
   const base = getPiyoBase();
   const res = await fetch(
     `${base}/chat-sessions/${encodeURIComponent(session_id)}?user_id=${encodeURIComponent(piyo_user_id)}`,
-    { method: "DELETE", cache: "no-store" }
+    { method: "DELETE", cache: "no-store", headers: getPiyoHeaders() }
   );
   if (!res.ok) throw new Error(`deleteChatSession failed: ${res.status}`);
   return res.json() as Promise<{ ok: boolean }>;
