@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
           show_hospital_cards:
             gpt?.show_hospital_cards === true || hasHosp,
           chat_log_id: data["chat_log_id"] ?? undefined,
-          intent: gpt?.intent ?? undefined,
+          intent: data["intent"] ?? undefined,
         },
       },
       { headers: { "X-RateLimit-Remaining": String(remaining) } }

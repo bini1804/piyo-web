@@ -77,12 +77,14 @@ function MessageBubble({
   hideSurveyAnswerNudge = false,
   isLatest,
   isLoggedIn,
+  onFeedbackSubmit,
 }: {
   message: ChatMessage;
   hideSurveyAnswerNudge?: boolean;
   /** 마지막 assistant 말풍선일 때만 타자 효과(줄 단위) */
   isLatest?: boolean;
   isLoggedIn?: boolean;
+  onFeedbackSubmit?: (feedback: 1 | -1) => void;
 }) {
   const isUser = message.role === "user";
   const meta = message.metadata;
@@ -333,7 +335,12 @@ function MessageBubble({
           isLoggedIn &&
           meta?.chat_log_id &&
           !["SMALLTALK", "FALLBACK"].includes(meta?.intent ?? "") && (
-            <FeedbackBar chatLogId={meta.chat_log_id} />
+            <FeedbackBar
+              chatLogId={meta.chat_log_id}
+              messageId={message.id}
+              initialFeedback={meta.userFeedback ?? null}
+              onFeedbackSubmit={onFeedbackSubmit}
+            />
           )}
       </div>
     </div>

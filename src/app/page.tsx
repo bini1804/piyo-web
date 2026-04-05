@@ -19,7 +19,10 @@ import LoginPromptModal, {
 import { fetchSurveyCompletedFromServerAction } from "@/lib/actions/piyo";
 import { pullPiyoSurveyIntoStore } from "@/lib/survey-hydrate";
 import SurveyWelcomeModal, { isSurveyNudgeDismissed } from "@/components/modals/SurveyWelcomeModal";
-import { getChatSessionsAction } from "@/lib/actions/piyo";
+import {
+  getChatSessionsAction,
+  saveChatSessionAction,
+} from "@/lib/actions/piyo";
 
 export default function HomePage() {
   const router = useRouter();
@@ -205,6 +208,21 @@ export default function HomePage() {
                     i === messages.length - 1 && m.role === "assistant"
                   }
                   isLoggedIn={isLoggedIn}
+                  onFeedbackSubmit={async (feedbackValue) => {
+                    if (!session?.user?.piyo_user_id) return;
+                    const store = useChatStore.getState();
+                    const currentSession = store.sessions.find(
+                      (s) => s.id === store.currentSessionId
+                    );
+                    if (!currentSession) return;
+                    await saveChatSessionAction({
+                      piyo_user_id: session.user.piyo_user_id,
+                      session_id: currentSession.id,
+                      title: currentSession.title ?? "대화",
+                      messages: store.messages,
+                      has_feedback: true,
+                    });
+                  }}
                 />
               ))}
               {isLoading && (

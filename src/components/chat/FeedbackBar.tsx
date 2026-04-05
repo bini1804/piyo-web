@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useChatStore } from "@/stores";
 
 interface FeedbackBarProps {
   chatLogId: string;
+  messageId: string;
+  initialFeedback?: 1 | -1 | null;
+  onFeedbackSubmit?: (feedback: 1 | -1) => void;
 }
 
 const POSITIVE_REASONS = [
@@ -25,15 +29,38 @@ const NEGATIVE_REASONS = [
 
 type FeedbackValue = 1 | -1 | null;
 
-export function FeedbackBar({ chatLogId }: FeedbackBarProps) {
-  const [feedback, setFeedback] = useState<FeedbackValue>(null);
+export function FeedbackBar({
+  chatLogId,
+  messageId,
+  initialFeedback,
+  onFeedbackSubmit,
+}: FeedbackBarProps) {
+  const setMessageFeedback = useChatStore((s) => s.setMessageFeedback);
+  const [feedback, setFeedback] = useState<FeedbackValue>(
+    () => initialFeedback ?? null
+  );
   const [selectedCode, setSelectedCode] = useState<number | null>(null);
   const [showSheet, setShowSheet] = useState(false);
   const [etcText, setEtcText] = useState("");
   const [showEtcInput, setShowEtcInput] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [thankYou, setThankYou] = useState(false);
+  const [submitted, setSubmitted] = useState(() => {
+    const v = initialFeedback ?? null;
+    return v === 1 || v === -1;
+  });
+  const [thankYou, setThankYou] = useState(() => initialFeedback === 1);
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** 다른 메시지 말풍선으로 바뀔 때만 스토어에 저장된 피드백·시트 상태를 맞춤 (같은 메시지에서의 스토어 갱신은 effect로 덮어쓰지 않음) */
+  useEffect(() => {
+    const v = initialFeedback ?? null;
+    setFeedback(v);
+    setSubmitted(v === 1 || v === -1);
+    setThankYou(v === 1);
+    setShowSheet(false);
+    setSelectedCode(null);
+    setShowEtcInput(false);
+    setEtcText("");
+  }, [messageId]);
 
   // 마운트 시 노출 기록
   useEffect(() => {
@@ -78,6 +105,8 @@ export function FeedbackBar({ chatLogId }: FeedbackBarProps) {
 
   const handleFeedback = async (value: 1 | -1) => {
     if (submitted) return;
+    setMessageFeedback(messageId, value);
+    onFeedbackSubmit?.(value);
     setFeedback(value);
     setShowSheet(true);
     setSelectedCode(null);

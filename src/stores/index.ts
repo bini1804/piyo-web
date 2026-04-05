@@ -27,6 +27,7 @@ interface ChatState {
   loadSession: (sessionId: string) => void;
   /** assistant 말풍선 타자 완료 후 호출 — 세션 전환 시 애니메이션 재생 방지 */
   markMessageAnimated: (messageId: string) => void;
+  setMessageFeedback: (messageId: string, feedback: 1 | -1) => void;
   updateSessionTitle: (sessionId: string, newTitle: string) => void;
   deleteSession: (sessionId: string) => void;
 }
@@ -173,6 +174,23 @@ export const useChatStore = create<ChatState>()(
               );
         set({ messages, sessions });
       },
+
+      setMessageFeedback: (messageId, feedback) =>
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m.id === messageId
+              ? { ...m, metadata: { ...m.metadata, userFeedback: feedback } }
+              : m
+          ),
+          sessions: state.sessions.map((sess) => ({
+            ...sess,
+            messages: sess.messages.map((m) =>
+              m.id === messageId
+                ? { ...m, metadata: { ...m.metadata, userFeedback: feedback } }
+                : m
+            ),
+          })),
+        })),
     }),
     {
       name: "piyo-chat-v3",

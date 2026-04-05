@@ -60,6 +60,8 @@ export interface ChatResponseMetadata {
   show_hospital_cards?: boolean;
   /** 피드백 연결용 DB row ID */
   chat_log_id?: string;
+  /** 세션 전환 후 복원용 — RDS 재조회 없이 로컬 메시지에만 저장 */
+  userFeedback?: 1 | -1 | null;
   /** 인텐트 분류 결과 — 피드백 노출 조건 판단용 */
   intent?: "SOLUTION" | "QA" | "HOSPITAL" | "SMALLTALK" | "FALLBACK";
 }
@@ -97,6 +99,8 @@ export interface PiyoChatResponse {
   };
   "GPT 요약답변": string;
   chat_log_id?: string | number;
+  /** /chat/v2 등 최상위 intent (메타데이터 전달용) */
+  intent?: string;
 }
 
 // ----- Cards -----
