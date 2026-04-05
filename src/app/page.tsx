@@ -48,6 +48,7 @@ export default function HomePage() {
     return useSurveyStore.persist?.hasHydrated?.() ?? false;
   });
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!session?.user;
@@ -203,6 +204,7 @@ export default function HomePage() {
     const localSessions = useChatStore.getState().sessions;
     if (localSessions.length > 0) return;
 
+    setIsRestoring(true);
     void getChatSessionsAction(piyoId).then((sessions) => {
       if (sessions && sessions.length > 0) {
         const chatSessions = sessions.map((s) => ({
@@ -284,6 +286,8 @@ export default function HomePage() {
           localStorage.removeItem(PIYO_ANON_PENDING_KEY);
         }
       }
+    }).finally(() => {
+      setIsRestoring(false);
     });
   }, [session?.user?.piyo_user_id]);
 
@@ -323,13 +327,20 @@ export default function HomePage() {
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {messages.length === 0 ? (
-            <WelcomeScreen
-              onSuggestionClick={sendMessage}
-              onSurveyClick={openSurvey}
-              userName={session?.user?.name ?? undefined}
-              nickname={surveyData.nickname?.trim() || undefined}
-              showSurveyCta={!hideSurveyChrome}
-            />
+            isRestoring ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-[#F4CB4B] rounded-full animate-spin" />
+                <p className="text-sm">대화를 불러오는 중...</p>
+              </div>
+            ) : (
+              <WelcomeScreen
+                onSuggestionClick={sendMessage}
+                onSurveyClick={openSurvey}
+                userName={session?.user?.name ?? undefined}
+                nickname={surveyData.nickname?.trim() || undefined}
+                showSurveyCta={!hideSurveyChrome}
+              />
+            )
           ) : (
             <div className="mx-auto w-full max-w-3xl space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6">
               {messages.map((m, i) => (
