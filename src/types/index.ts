@@ -44,6 +44,8 @@ export interface ChatMessage {
   content: string;
   metadata?: ChatResponseMetadata;
   created_at: string;
+  /** 타이핑 애니메이션 완료(또는 스킵) 후 true — 세션 전환·복원 시 재생 방지 */
+  animated?: boolean;
 }
 
 export interface ChatResponseMetadata {

@@ -25,6 +25,8 @@ interface ChatState {
   clearAllSessions: () => void;
   saveCurrentSession: () => void;
   loadSession: (sessionId: string) => void;
+  /** assistant 말풍선 타자 완료 후 호출 — 세션 전환 시 애니메이션 재생 방지 */
+  markMessageAnimated: (messageId: string) => void;
   updateSessionTitle: (sessionId: string, newTitle: string) => void;
   deleteSession: (sessionId: string) => void;
 }
@@ -105,7 +107,7 @@ export const useChatStore = create<ChatState>()(
             set({
               sessions: newSessions,
               currentSessionId: next.id,
-              messages: next.messages.map((m) => ({ ...m })),
+              messages: next.messages.map((m) => ({ ...m, animated: true })),
             });
           } else {
             set({
@@ -144,9 +146,32 @@ export const useChatStore = create<ChatState>()(
           typeof window !== "undefined" && window.innerWidth < 768;
         set({
           currentSessionId: sessionId,
-          messages: sess.messages.map((m) => ({ ...m })),
+          messages: sess.messages.map((m) => ({ ...m, animated: true })),
           ...(mobile ? { isSidebarOpen: false } : {}),
         });
+      },
+
+      markMessageAnimated: (messageId: string) => {
+        const s = get();
+        const cid = s.currentSessionId;
+        const messages = s.messages.map((m) =>
+          m.id === messageId ? { ...m, animated: true } : m
+        );
+        const sessions =
+          cid == null
+            ? s.sessions
+            : s.sessions.map((sess) =>
+                sess.id === cid
+                  ? {
+                      ...sess,
+                      messages: sess.messages.map((m) =>
+                        m.id === messageId ? { ...m, animated: true } : m
+                      ),
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : sess
+              );
+        set({ messages, sessions });
       },
     }),
     {
@@ -160,7 +185,14 @@ export const useChatStore = create<ChatState>()(
       // 과거 스토어/수동 저장으로 localStorage에 isLoading 이 남아 있으면 재수화 시 로딩이 고착됨
       onRehydrateStorage: () => (_state, error) => {
         if (error) return;
-        useChatStore.setState({ isLoading: false });
+        useChatStore.setState((s) => ({
+          isLoading: false,
+          messages: s.messages.map((m) => ({ ...m, animated: true })),
+          sessions: s.sessions.map((sess) => ({
+            ...sess,
+            messages: sess.messages.map((m) => ({ ...m, animated: true })),
+          })),
+        }));
       },
     }
   )

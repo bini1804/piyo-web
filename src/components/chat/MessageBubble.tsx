@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -23,6 +23,7 @@ import type { HospitalInfo } from "@/types";
 import { HorizontalChatSection } from "@/components/chat/HorizontalChatSection";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { FeedbackBar } from "@/components/chat/FeedbackBar";
+import { useChatStore } from "@/stores";
 
 /** 병원: 앱 `HospitalCard` compact + 카드 클릭 시 `/hospital/{id}` + 예약/전화 */
 function ChatHospitalSection({
@@ -95,7 +96,25 @@ function MessageBubble({
   // 피요 답변은 전체 텍스트를 한 번에 ReactMarkdown에 넘긴다.
   // isRestored 플래그가 있으면 타이핑 애니메이션 스킵
   const isRestored = !!(message as ChatMessage & { isRestored?: boolean }).isRestored;
-  const { displayed, done } = useTypewriter(safeContent, (isLatest ?? false) && !isRestored);
+  const typewriterEnabled =
+    (isLatest ?? false) && !isRestored && message.animated !== true;
+  const { displayed, done } = useTypewriter(safeContent, typewriterEnabled);
+  const markMessageAnimated = useChatStore((s) => s.markMessageAnimated);
+
+  useEffect(() => {
+    if (!done || isUser) return;
+    if (!(isLatest ?? false) || isRestored) return;
+    if (message.animated === true) return;
+    markMessageAnimated(message.id);
+  }, [
+    done,
+    isUser,
+    isLatest,
+    isRestored,
+    message.id,
+    message.animated,
+    markMessageAnimated,
+  ]);
 
   const scoreMap = meta?.score as Record<string, unknown> | undefined;
   const proceduresRaw = (meta?.recommended_procedures ?? [])

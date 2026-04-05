@@ -141,6 +141,7 @@ export default function HomePage() {
       const restoredMessages = (latestSession?.messages ?? []).map((m) => ({
         ...m,
         isRestored: true,
+        animated: true,
       }));
       useChatStore.setState({
         sessions: chatSessions,
