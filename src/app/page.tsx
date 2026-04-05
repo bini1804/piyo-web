@@ -3,7 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useChatStore, useSurveyStore } from "@/stores";
+import {
+  useChatStore,
+  useSurveyStore,
+  readPiyoChatPersistSnapshot,
+  PIYO_CHAT_PERSIST_KEY,
+} from "@/stores";
 import { usePiyoChat } from "@/hooks/usePiyoChat";
 import ChatSidebar from "@/components/layout/ChatSidebar";
 import ChatHeader from "@/components/layout/ChatHeader";
@@ -23,6 +28,8 @@ import {
   getChatSessionsAction,
   saveChatSessionAction,
 } from "@/lib/actions/piyo";
+import { getAnonymousId, PIYO_ANON_PENDING_KEY } from "@/lib/utils";
+import type { ChatMessage, ChatSession } from "@/types";
 
 export default function HomePage() {
   const router = useRouter();
@@ -45,6 +52,16 @@ export default function HomePage() {
 
   const isLoggedIn = !!session?.user;
   const userMessageCount = messages.filter((m) => m.role === "user").length;
+
+  /**
+   * 비로그인 동안 마지막 사용자 식별자를 anon id로 둠 → 로그인 시 prevId === anon_…
+   * 로그인 이펙트에서 isPrevAnon·piyo-anon-pending 백업·초기화 흐름이 맞게 이어짐.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (session?.user?.piyo_user_id) return;
+    localStorage.setItem("piyo-last-user-id", getAnonymousId());
+  }, [session?.user?.piyo_user_id]);
 
   useEffect(() => {
     const p = useSurveyStore.persist;
@@ -118,39 +135,155 @@ export default function HomePage() {
     const piyoId = session?.user?.piyo_user_id;
     if (!piyoId) return;
 
-    // 다른 계정 재로그인 시 로컬 스토어 초기화
+    // 소셜 A → 소셜 B: prevId 가 실제 piyo_user_id 이고 서로 다를 때만 초기화 (anon 은 제외)
     const prevId = localStorage.getItem("piyo-last-user-id");
-    if (prevId && prevId !== piyoId) {
+    const isUserAccountSwitch = Boolean(
+      prevId && !prevId.startsWith("anon_") && prevId !== piyoId
+    );
+
+    if (isUserAccountSwitch) {
       useChatStore.getState().clearAllSessions();
-      localStorage.removeItem("piyo-chat-v3");
+      localStorage.removeItem(PIYO_CHAT_PERSIST_KEY);
+      localStorage.removeItem(PIYO_ANON_PENDING_KEY);
     }
+
+    // 비로그인(prevId === anon_) → 로그인: 게스트 대화만 백업 후 persist 비움
+    // OAuth 전체 리로드 시 메모리 스토어가 아직 비어 있을 수 있어 localStorage 스냅샷도 본다 (CASE 1).
+    const isGuestToLogin = Boolean(piyoId && prevId?.startsWith("anon_"));
+    if (isGuestToLogin) {
+      const mem = useChatStore.getState();
+      const disk = readPiyoChatPersistSnapshot();
+      const hasMemory =
+        mem.messages.length > 0 || mem.sessions.length > 0;
+      const guestSessions = hasMemory ? mem.sessions : (disk?.sessions ?? []);
+      const guestMessages = hasMemory ? mem.messages : (disk?.messages ?? []);
+      const hadGuestChat =
+        guestMessages.some((m) => m.createdAsGuest) ||
+        guestSessions.some((ses) =>
+          ses.messages.some((m) => m.createdAsGuest)
+        );
+      if (hadGuestChat) {
+        localStorage.setItem(
+          PIYO_ANON_PENDING_KEY,
+          JSON.stringify({
+            sessions: guestSessions,
+            messages: guestMessages,
+          })
+        );
+        useChatStore.getState().clearAllSessions();
+        localStorage.removeItem(PIYO_CHAT_PERSIST_KEY);
+      }
+    }
+
     localStorage.setItem("piyo-last-user-id", piyoId);
+
+    // 게스트 → 로그인: 문자열 pending(anon id) + createdAsGuest 만 즉시 처리.
+    // JSON pending(계정 전환 백업)은 RDS 복원 후 .then 에서 병합·제거.
+    let deferJsonAnonMerge = false;
+    try {
+      const pending = localStorage.getItem(PIYO_ANON_PENDING_KEY);
+      if (pending?.startsWith("{")) {
+        deferJsonAnonMerge = true;
+      } else if (pending) {
+        const anonId = getAnonymousId();
+        const hasGuestTurn = useChatStore
+          .getState()
+          .messages.some((m) => m.createdAsGuest);
+        if (pending === anonId && hasGuestTurn) {
+          useChatStore.getState().markMessagesPreLoginFromGuest();
+        }
+      }
+    } finally {
+      if (!deferJsonAnonMerge) {
+        localStorage.removeItem(PIYO_ANON_PENDING_KEY);
+      }
+    }
 
     // 로컬 스토어가 비어있을 때만 RDS에서 복원
     const localSessions = useChatStore.getState().sessions;
     if (localSessions.length > 0) return;
 
     void getChatSessionsAction(piyoId).then((sessions) => {
-      if (!sessions || sessions.length === 0) return;
-      const chatSessions = sessions.map((s) => ({
-        id: s.session_id,
-        title: s.title ?? "이전 대화",
-        messages: (s.messages as import("@/types").ChatMessage[]) ?? [],
-        createdAt: s.created_at ?? new Date().toISOString(),
-        updatedAt: s.updated_at ?? new Date().toISOString(),
-      }));
-      const latestSession = chatSessions[0];
-      // 복원된 메시지는 isRestored 플래그 추가 — 타이핑 애니메이션 스킵
-      const restoredMessages = (latestSession?.messages ?? []).map((m) => ({
-        ...m,
-        isRestored: true,
-        animated: true,
-      }));
-      useChatStore.setState({
-        sessions: chatSessions,
-        currentSessionId: latestSession?.id ?? null,
-        messages: restoredMessages,
-      });
+      if (sessions && sessions.length > 0) {
+        const chatSessions = sessions.map((s) => ({
+          id: s.session_id,
+          title: s.title ?? "이전 대화",
+          messages: (s.messages as ChatMessage[]) ?? [],
+          createdAt: s.created_at ?? new Date().toISOString(),
+          updatedAt: s.updated_at ?? new Date().toISOString(),
+        }));
+        const latestSession = chatSessions[0];
+        // 복원된 메시지는 isRestored 플래그 추가 — 타이핑 애니메이션 스킵
+        const restoredMessages = (latestSession?.messages ?? []).map((m) => ({
+          ...m,
+          isRestored: true,
+          animated: true,
+        }));
+        useChatStore.setState({
+          sessions: chatSessions,
+          currentSessionId: latestSession?.id ?? null,
+          messages: restoredMessages,
+        });
+      }
+
+      // anon 대화 병합
+      const pendingRaw = localStorage.getItem(PIYO_ANON_PENDING_KEY);
+      if (pendingRaw) {
+        try {
+          const { sessions: anonSessions, messages: anonMessages } =
+            JSON.parse(pendingRaw) as {
+              sessions?: ChatSession[];
+              messages?: ChatMessage[];
+            };
+
+          const anonSess = anonSessions ?? [];
+          const anonMsgs = anonMessages ?? [];
+
+          // RDS 복원된 세션이 없으면 anon 대화를 그대로 사용
+          // RDS 세션이 있으면 anon 대화를 별도 세션으로 prepend
+          const store = useChatStore.getState();
+          const currentSessions = store.sessions;
+
+          // RDS 세션 없음 + anon 세션 구조 있음 → 세션·메시지 그대로 복원(제목은 그대로)
+          if (currentSessions.length === 0 && anonSess.length > 0) {
+            const prepended = anonSess.map((s) => ({
+              ...s,
+              messages: s.messages.map((m) => ({ ...m, animated: true })),
+            }));
+            const first = prepended[0];
+            const firstMsgs =
+              first?.messages?.length
+                ? first.messages
+                : anonMsgs.map((m) => ({ ...m, animated: true }));
+            useChatStore.setState({
+              sessions: prepended,
+              currentSessionId: first?.id ?? null,
+              messages: firstMsgs.map((m) => ({ ...m, animated: true })),
+            });
+          } else if (currentSessions.length === 0 && anonMsgs.length > 0) {
+            // 세션 메타 없이 메시지만 있는 백업 → 현재 스레드로 복원
+            const sid = anonMsgs[0]?.session_id ?? null;
+            useChatStore.setState({
+              currentSessionId: sid,
+              messages: anonMsgs.map((m) => ({ ...m, animated: true })),
+            });
+          } else if (anonSess.length > 0) {
+            // RDS 세션 있음 → anon 세션을 "[로그인 전]" 달아 상단에 prepend
+            const prepended = anonSess.map((s) => ({
+              ...s,
+              title: `[로그인 전] ${s.title ?? "대화"}`,
+              messages: s.messages.map((m) => ({ ...m, animated: true })),
+            }));
+            useChatStore.setState({
+              sessions: [...prepended, ...currentSessions],
+            });
+          }
+        } catch (e) {
+          console.error("[anon-merge] 파싱 실패:", e);
+        } finally {
+          localStorage.removeItem(PIYO_ANON_PENDING_KEY);
+        }
+      }
     });
   }, [session?.user?.piyo_user_id]);
 

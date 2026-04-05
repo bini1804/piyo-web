@@ -7,6 +7,38 @@ function newSessionId(): string {
   return uuidv4().replace(/-/g, "").slice(0, 8);
 }
 
+/** 채팅 Zustand persist 키 — 로그아웃·로그인 이펙트와 동일해야 함 */
+export const PIYO_CHAT_PERSIST_KEY = "piyo-chat-v3";
+
+/**
+ * OAuth 리다이렉트 직후 리하이드레이션 전에도 게스트 대화를 읽기 위해
+ * localStorage persist JSON을 동기적으로 파싱한다.
+ */
+export function readPiyoChatPersistSnapshot(): {
+  sessions: ChatSession[];
+  messages: ChatMessage[];
+} | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PIYO_CHAT_PERSIST_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      state?: {
+        sessions?: ChatSession[];
+        messages?: ChatMessage[];
+      };
+    };
+    const st = parsed.state;
+    if (!st) return null;
+    return {
+      sessions: Array.isArray(st.sessions) ? st.sessions : [],
+      messages: Array.isArray(st.messages) ? st.messages : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ---- Chat Store ----
 interface ChatState {
   sessions: ChatSession[];
@@ -23,6 +55,8 @@ interface ChatState {
   startNewSession: () => void;
   /** 로그아웃 등 — 세션·메시지 전부 초기화 (persist 키는 호출부에서 제거) */
   clearAllSessions: () => void;
+  /** 게스트 → 로그인 1회 병합: 기존 로컬 메시지에만 [로그인 전] 표시용 플래그 */
+  markMessagesPreLoginFromGuest: () => void;
   saveCurrentSession: () => void;
   loadSession: (sessionId: string) => void;
   /** assistant 말풍선 타자 완료 후 호출 — 세션 전환 시 애니메이션 재생 방지 */
@@ -140,6 +174,23 @@ export const useChatStore = create<ChatState>()(
           messages: [],
         }),
 
+      markMessagesPreLoginFromGuest: () =>
+        set((s) => ({
+          messages: s.messages.map((m) =>
+            m.createdAsGuest
+              ? { ...m, preLogin: true, createdAsGuest: undefined }
+              : m
+          ),
+          sessions: s.sessions.map((sess) => ({
+            ...sess,
+            messages: sess.messages.map((m) =>
+              m.createdAsGuest
+                ? { ...m, preLogin: true, createdAsGuest: undefined }
+                : m
+            ),
+          })),
+        })),
+
       loadSession: (sessionId: string) => {
         const sess = get().sessions.find((x) => x.id === sessionId);
         if (!sess) return;
@@ -193,7 +244,7 @@ export const useChatStore = create<ChatState>()(
         })),
     }),
     {
-      name: "piyo-chat-v3",
+      name: PIYO_CHAT_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         sessions: state.sessions,

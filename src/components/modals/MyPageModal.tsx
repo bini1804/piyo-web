@@ -5,7 +5,11 @@ import { signOut } from "next-auth/react";
 import { X } from "lucide-react";
 import type { SkinType } from "@/types";
 import { SENSITIVITY_LEVELS } from "@/constants/survey";
-import { useChatStore, useSurveyStore } from "@/stores";
+import {
+  useChatStore,
+  useSurveyStore,
+  PIYO_CHAT_PERSIST_KEY,
+} from "@/stores";
 
 const SKIN_LABEL: Record<SkinType, string> = {
   oily: "지성",
@@ -53,7 +57,7 @@ export default function MyPageModal({
     // 로컬 채팅 스토어 초기화 (화면에서 즉시 제거)
     // RDS 데이터는 유지 — 재로그인 시 복원됨
     useChatStore.getState().clearAllSessions();
-    localStorage.removeItem("piyo-chat-v3");
+    localStorage.removeItem(PIYO_CHAT_PERSIST_KEY);
     localStorage.removeItem("piyo-survey-store");
     localStorage.removeItem("login_modal_dismissed_at");
     localStorage.removeItem("piyo-last-user-id");

@@ -8,14 +8,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Generate or retrieve anonymous id (session-scoped). Prefix `anon_` for backend is_anonymous_user(). */
+/** localStorage 키 — 비로그인 `user_id` (브라우저·기기 단위 유지) */
+export const PIYO_ANONYMOUS_ID_KEY = "piyo_anonymous_id";
+
+/**
+ * 게스트 → 로그인 병합 1회용 마커(값 = 당시 anon id).
+ * 병합 완료 후 즉시 제거해 재로그인 시 anon 대화 중복 병합을 막음.
+ */
+export const PIYO_ANON_PENDING_KEY = "piyo-anon-pending";
+
+/** Generate or retrieve anonymous id (localStorage). Prefix `anon_` for backend is_anonymous_user(). */
 export function getAnonymousId(): string {
   if (typeof window === "undefined")
     return `anon_${uuidv4().replace(/-/g, "").slice(0, 8)}`;
-  const stored = sessionStorage.getItem("piyo_anonymous_id");
+  const stored = localStorage.getItem(PIYO_ANONYMOUS_ID_KEY);
   if (stored) return stored;
   const id = `anon_${uuidv4().replace(/-/g, "").slice(0, 8)}`;
-  sessionStorage.setItem("piyo_anonymous_id", id);
+  localStorage.setItem(PIYO_ANONYMOUS_ID_KEY, id);
   return id;
 }
 
